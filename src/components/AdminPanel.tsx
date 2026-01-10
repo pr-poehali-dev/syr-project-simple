@@ -226,64 +226,135 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
                         {order.comment && <p className="text-sm">Комментарий: {order.comment}</p>}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold mb-2">Состав заказа:</p>
-                        {order.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center text-sm py-2 border-b last:border-0 gap-2">
-                            <div className="flex-1">
-                              <p className="font-medium">{item.product.name}</p>
-                              <div className="flex gap-2 mt-1">
-                                <Input
-                                  type="text"
-                                  value={item.product.weight}
-                                  onChange={(e) => {
-                                    const updatedItems = [...order.items];
-                                    updatedItems[idx] = { 
-                                      ...item, 
-                                      product: { ...item.product, weight: e.target.value }
-                                    };
-                                    const newTotal = updatedItems.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
-                                    onOrderUpdate(order.id, { items: updatedItems, total: newTotal });
-                                  }}
-                                  className="w-20 h-7 text-xs"
-                                  placeholder="500 г"
-                                />
-                                <Input
-                                  type="number"
-                                  value={item.product.price}
-                                  onChange={(e) => {
-                                    const newPrice = Number(e.target.value);
-                                    const updatedItems = [...order.items];
-                                    updatedItems[idx] = { 
-                                      ...item, 
-                                      product: { ...item.product, price: newPrice }
-                                    };
-                                    const newTotal = updatedItems.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
-                                    onOrderUpdate(order.id, { items: updatedItems, total: newTotal });
-                                  }}
-                                  className="w-20 h-7 text-xs"
-                                  placeholder="Цена"
-                                />
+                        <p className="text-sm font-semibold mb-2">
+                          Состав заказа:
+                          <span className="ml-2 text-xs font-normal text-muted-foreground">
+                            (Измените вес — цена пересчитается автоматически)
+                          </span>
+                        </p>
+                        {order.items.map((item, idx) => {
+                          const parseWeight = (weightStr: string): number => {
+                            const match = weightStr.match(/(\d+(?:\.\d+)?)/);
+                            return match ? parseFloat(match[1]) : 0;
+                          };
+
+                          const calculatePrice = (basePrice: number, originalWeight: string, newWeight: string): number => {
+                            const origGrams = parseWeight(originalWeight);
+                            const newGrams = parseWeight(newWeight);
+                            if (origGrams === 0) return basePrice;
+                            const pricePerGram = basePrice / origGrams;
+                            return Math.round(pricePerGram * newGrams);
+                          };
+
+                          const originalWeight = (item.product as any).originalWeight || item.product.weight;
+                          const originalPrice = (item.product as any).originalPrice || item.product.price;
+                          const basePricePer100g = (originalPrice / parseWeight(originalWeight)) * 100;
+
+                          return (
+                            <div key={idx} className="border rounded-lg p-3 space-y-2 bg-muted/30">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <p className="font-medium">{item.product.name}</p>
+                                  <div className="flex gap-4 text-xs text-muted-foreground">
+                                    <span>Заказано: {originalWeight} за {originalPrice} ₽</span>
+                                    <span className="font-medium text-primary">
+                                      {Math.round(basePricePer100g)} ₽/100г
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-3 gap-2">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Вес факт.</Label>
+                                  <Input
+                                    type="text"
+                                    value={item.product.weight}
+                                    onChange={(e) => {
+                                      const newWeight = e.target.value;
+                                      const newPrice = calculatePrice(originalPrice, originalWeight, newWeight);
+                                      
+                                      const updatedItems = [...order.items];
+                                      updatedItems[idx] = { 
+                                        ...item, 
+                                        product: { 
+                                          ...item.product, 
+                                          weight: newWeight,
+                                          price: newPrice 
+                                        }
+                                      };
+                                      const newTotal = updatedItems.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+                                      onOrderUpdate(order.id, { items: updatedItems, total: newTotal });
+                                    }}
+                                    className="h-8 text-xs"
+                                    placeholder="500г"
+                                  />
+                                </div>
+                                
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Цена</Label>
+                                  <Input
+                                    type="number"
+                                    value={item.product.price}
+                                    onChange={(e) => {
+                                      const newPrice = Number(e.target.value);
+                                      const updatedItems = [...order.items];
+                                      updatedItems[idx] = { 
+                                        ...item, 
+                                        product: { ...item.product, price: newPrice }
+                                      };
+                                      const newTotal = updatedItems.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+                                      onOrderUpdate(order.id, { items: updatedItems, total: newTotal });
+                                    }}
+                                    className="h-8 text-xs"
+                                    placeholder="Цена"
+                                  />
+                                </div>
+                                
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Кол-во</Label>
+                                  <Input
+                                    type="number"
+                                    value={item.quantity}
+                                    onChange={(e) => {
+                                      const newQuantity = Number(e.target.value);
+                                      const updatedItems = [...order.items];
+                                      updatedItems[idx] = { ...item, quantity: newQuantity };
+                                      const newTotal = updatedItems.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+                                      onOrderUpdate(order.id, { items: updatedItems, total: newTotal });
+                                    }}
+                                    className="h-8 text-xs text-center"
+                                    min="1"
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div className="flex justify-between items-center pt-2 border-t">
+                                <div className="text-xs">
+                                  <div className="text-muted-foreground">
+                                    {item.product.weight} × {item.quantity} шт
+                                  </div>
+                                  {parseWeight(item.product.weight) !== parseWeight(originalWeight) && (
+                                    <div className="text-orange-600 font-medium flex items-center gap-1 mt-1">
+                                      <Icon name="Calculator" size={12} />
+                                      Пересчитано с {originalWeight}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <div className="font-semibold text-primary text-lg">
+                                    {item.product.price * item.quantity} ₽
+                                  </div>
+                                  {item.product.price !== originalPrice && (
+                                    <div className="text-xs text-muted-foreground line-through">
+                                      {originalPrice * item.quantity} ₽
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => {
-                                  const newQuantity = Number(e.target.value);
-                                  const updatedItems = [...order.items];
-                                  updatedItems[idx] = { ...item, quantity: newQuantity };
-                                  const newTotal = updatedItems.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
-                                  onOrderUpdate(order.id, { items: updatedItems, total: newTotal });
-                                }}
-                                className="w-16 h-8 text-center"
-                                min="1"
-                              />
-                              <span className="text-xs">×</span>
-                              <span className="font-medium min-w-[60px] text-right">{item.product.price * item.quantity} ₽</span>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <div className="border-t pt-2 flex justify-between font-semibold">
                         <span>Итого:</span>

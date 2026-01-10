@@ -149,7 +149,10 @@ export default function CheckoutDialog({
                 phone: orderForm.phone,
                 address: deliveryType === 'delivery' ? orderForm.address : 'Самовывоз',
                 comment: orderForm.comment,
-                items: cart.map(item => ({ product: item, quantity: item.quantity })),
+                items: cart.map(item => ({ 
+                  product: { ...item, originalWeight: item.weight, originalPrice: item.price }, 
+                  quantity: item.quantity 
+                })),
                 total: cartTotal,
                 deliveryType,
                 status: 'new',
