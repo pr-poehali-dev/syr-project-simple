@@ -207,7 +207,20 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
                           <div key={idx} className="flex justify-between items-center text-sm py-2 border-b last:border-0 gap-2">
                             <div className="flex-1">
                               <p className="font-medium">{item.product.name}</p>
-                              <p className="text-xs text-muted-foreground">{item.product.weight}</p>
+                              <Input
+                                type="text"
+                                value={item.product.weight}
+                                onChange={(e) => {
+                                  const updatedItems = [...order.items];
+                                  updatedItems[idx] = { 
+                                    ...item, 
+                                    product: { ...item.product, weight: e.target.value }
+                                  };
+                                  onOrderUpdate(order.id, { items: updatedItems });
+                                }}
+                                className="w-24 h-7 text-xs mt-1"
+                                placeholder="500 г"
+                              />
                             </div>
                             <div className="flex items-center gap-2">
                               <Input

@@ -53,6 +53,56 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
+  [data-theme="winter"] {
+    --background: 210 30% 96%;
+    --foreground: 210 30% 15%;
+    --primary: 210 70% 55%;
+    --secondary: 210 40% 92%;
+    --muted: 210 30% 94%;
+    --accent: 200 80% 60%;
+    --border: 210 20% 85%;
+  }
+
+  [data-theme="spring"] {
+    --background: 120 30% 97%;
+    --foreground: 120 20% 20%;
+    --primary: 150 50% 50%;
+    --secondary: 120 40% 90%;
+    --muted: 120 25% 93%;
+    --accent: 100 60% 65%;
+    --border: 120 20% 88%;
+  }
+
+  [data-theme="summer"] {
+    --background: 50 60% 96%;
+    --foreground: 30 30% 20%;
+    --primary: 45 90% 55%;
+    --secondary: 50 50% 88%;
+    --muted: 50 40% 92%;
+    --accent: 30 80% 60%;
+    --border: 45 30% 85%;
+  }
+
+  [data-theme="autumn"] {
+    --background: 25 40% 95%;
+    --foreground: 25 30% 20%;
+    --primary: 20 60% 50%;
+    --secondary: 25 45% 88%;
+    --muted: 25 35% 90%;
+    --accent: 15 70% 55%;
+    --border: 25 25% 82%;
+  }
+
+  [data-theme="holiday"] {
+    --background: 0 50% 97%;
+    --foreground: 0 30% 15%;
+    --primary: 355 70% 55%;
+    --secondary: 120 40% 90%;
+    --muted: 0 30% 93%;
+    --accent: 45 80% 60%;
+    --border: 0 20% 88%;
+  }
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;

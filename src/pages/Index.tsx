@@ -127,7 +127,7 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" data-theme={siteSettings.theme}>
       <Header
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
