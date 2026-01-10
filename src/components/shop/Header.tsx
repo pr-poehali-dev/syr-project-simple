@@ -22,6 +22,8 @@ type HeaderProps = {
   logo?: string;
   isAdmin?: boolean;
   onAdminClick?: () => void;
+  isCustomer?: boolean;
+  onCustomerAccountClick?: () => void;
 };
 
 export default function Header({
@@ -38,7 +40,9 @@ export default function Header({
   setIsCheckoutOpen,
   logo,
   isAdmin = false,
-  onAdminClick
+  onAdminClick,
+  isCustomer = false,
+  onCustomerAccountClick
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
@@ -120,14 +124,27 @@ export default function Header({
                 Админ-панель
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsAuthOpen(true)}
-              className="relative"
-            >
-              <Icon name="User" size={20} />
-            </Button>
+            {isCustomer && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCustomerAccountClick}
+                className="relative"
+              >
+                <Icon name="User" size={16} className="mr-2" />
+                Мой кабинет
+              </Button>
+            )}
+            {!isCustomer && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsAuthOpen(true)}
+                className="relative"
+              >
+                <Icon name="User" size={20} />
+              </Button>
+            )}
 
             <Sheet>
               <SheetTrigger asChild>

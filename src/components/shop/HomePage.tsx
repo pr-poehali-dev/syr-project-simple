@@ -1,15 +1,13 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Icon from '@/components/ui/icon';
-import { Product } from '@/components/types';
+import { Product, ProductVariant } from '@/components/types';
+import ProductCard from './ProductCard';
 
 type HomePageProps = {
   activeCategory: string;
   setActiveCategory: (category: string) => void;
   filteredProducts: Product[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, variant?: ProductVariant) => void;
 };
 
 export default function HomePage({ activeCategory, setActiveCategory, filteredProducts, addToCart }: HomePageProps) {
@@ -44,31 +42,13 @@ export default function HomePage({ activeCategory, setActiveCategory, filteredPr
           </TabsList>
         </Tabs>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredProducts.map(product => (
-            <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow animate-fade-in">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-48 object-cover"
-              />
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-heading font-semibold text-lg">{product.name}</h4>
-                  <Badge variant="secondary">{product.weight}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  В наличии: {product.stock} шт
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-primary">{product.price} ₽</span>
-                  <Button onClick={() => addToCart(product)}>
-                    <Icon name="ShoppingCart" size={16} className="mr-2" />
-                    В корзину
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ProductCard
+              key={product.id}
+              product={product}
+              onAddToCart={addToCart}
+            />
           ))}
         </div>
       </section>

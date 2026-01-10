@@ -1,3 +1,9 @@
+export type ProductVariant = {
+  name: string;
+  price: number;
+  weight: string;
+};
+
 export type Product = {
   id: number;
   name: string;
@@ -6,9 +12,13 @@ export type Product = {
   image: string;
   category: string;
   stock: number;
+  variants?: ProductVariant[];
 };
 
-export type CartItem = Product & { quantity: number };
+export type CartItem = Product & { 
+  quantity: number;
+  selectedVariant?: ProductVariant;
+};
 
 export const products: Product[] = [
   {

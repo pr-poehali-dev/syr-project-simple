@@ -8,8 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Icon from '@/components/ui/icon';
-import { Product } from './types';
+import { Product, ProductVariant } from './types';
 import SiteSettings from './SiteSettings';
+import ProductVariantsManager from './ProductVariantsManager';
 
 type Order = {
   id: number;
@@ -37,13 +38,14 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
 
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [newProduct, setNewProduct] = useState({
+  const [newProduct, setNewProduct] = useState<Omit<Product, 'id'>>({
     name: '',
     price: 0,
     weight: '',
     image: '',
     category: 'cheese',
-    stock: 0
+    stock: 0,
+    variants: []
   });
 
   const [siteSettings, setSiteSettings] = useState(() => {
@@ -70,7 +72,8 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
       weight: '',
       image: '',
       category: 'cheese',
-      stock: 0
+      stock: 0,
+      variants: []
     });
     setIsAddProductOpen(false);
   };
@@ -426,6 +429,10 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
                 <img src={newProduct.image} alt="Предпросмотр" className="w-full h-32 object-cover rounded-md mt-2" />
               )}
             </div>
+            <ProductVariantsManager
+              variants={newProduct.variants || []}
+              onChange={(variants) => setNewProduct({ ...newProduct, variants })}
+            />
             <Button onClick={handleAddProduct} className="w-full">
               Добавить товар
             </Button>
@@ -497,6 +504,10 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
                   <img src={editingProduct.image} alt="Предпросмотр" className="w-full h-32 object-cover rounded-md mt-2" />
                 )}
               </div>
+              <ProductVariantsManager
+                variants={editingProduct.variants || []}
+                onChange={(variants) => setEditingProduct({ ...editingProduct, variants })}
+              />
               <Button onClick={handleUpdateProduct} className="w-full">
                 Сохранить изменения
               </Button>

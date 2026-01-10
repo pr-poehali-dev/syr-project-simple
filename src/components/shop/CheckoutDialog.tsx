@@ -33,6 +33,7 @@ type CheckoutDialogProps = {
   orders: Order[];
   setOrders: (orders: Order[]) => void;
   setCart: (cart: CartItem[]) => void;
+  customerEmail?: string;
 };
 
 export default function CheckoutDialog({
@@ -45,7 +46,8 @@ export default function CheckoutDialog({
   setOrderForm,
   orders,
   setOrders,
-  setCart
+  setCart,
+  customerEmail
 }: CheckoutDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -151,7 +153,8 @@ export default function CheckoutDialog({
                 total: cartTotal,
                 deliveryType,
                 status: 'new',
-                date: new Date()
+                date: new Date(),
+                customerEmail: customerEmail
               };
 
               setOrders([...orders, newOrder]);
