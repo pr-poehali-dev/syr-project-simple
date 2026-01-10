@@ -177,9 +177,24 @@ export default function SiteSettings({ settings, onSave }: SiteSettingsProps) {
         </CardContent>
       </Card>
 
-      <Button onClick={() => {
-        localStorage.setItem('siteSettings', JSON.stringify(localSettings));
-        onSave(localSettings);
+      <Button onClick={async () => {
+        try {
+          const response = await fetch('https://functions.poehali.dev/94291b30-51cf-493d-8351-a3182150e773', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(localSettings)
+          });
+          
+          if (response.ok) {
+            onSave(localSettings);
+            alert('Настройки сохранены! Все пользователи увидят изменения.');
+          } else {
+            alert('Ошибка сохранения настроек');
+          }
+        } catch (error) {
+          console.error('Ошибка:', error);
+          alert('Ошибка сохранения настроек');
+        }
       }} size="lg" className="w-full">
         Сохранить настройки
       </Button>

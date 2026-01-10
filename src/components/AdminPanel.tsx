@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -48,21 +48,30 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
     variants: []
   });
 
-  const [siteSettings, setSiteSettings] = useState(() => {
-    const saved = localStorage.getItem('siteSettings');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    return {
-      logo: '🧀',
-      theme: 'default',
-      minDeliveryAmount: 2500,
-      siteDescription: 'Сыроварня SOBKO — натуральные продукты с любовью и заботой о вашем здоровье!',
-      telegramBotToken: '8530330128:AAH7zYq7jWo-TdGIZStP3AMDL5s_-Jzbkcg',
-      telegramChatId: '6368037525, 295345720',
-      farmPhotos: [] as string[]
-    };
+  const [siteSettings, setSiteSettings] = useState({
+    logo: '🧀',
+    theme: 'default',
+    minDeliveryAmount: 2500,
+    siteDescription: 'Сыроварня SOBKO — натуральные продукты с любовью и заботой о вашем здоровье!',
+    telegramBotToken: '8530330128:AAH7zYq7jWo-TdGIZStP3AMDL5s_-Jzbkcg',
+    telegramChatId: '6368037525, 295345720',
+    farmPhotos: [] as string[]
   });
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('https://functions.poehali.dev/94291b30-51cf-493d-8351-a3182150e773');
+        if (response.ok) {
+          const data = await response.json();
+          setSiteSettings(data);
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки настроек:', error);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const handleAddProduct = () => {
     onProductAdd(newProduct);
@@ -341,7 +350,6 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
                 if (onSettingsUpdate) {
                   onSettingsUpdate(newSettings);
                 }
-                alert('Настройки сохранены!');
               }}
             />
           </TabsContent>

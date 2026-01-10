@@ -1,0 +1,30 @@
+{
+  "tests": [
+    {
+      "name": "Get default settings",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "logo": "string",
+        "theme": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Save settings",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "logo": "test_logo",
+        "theme": "winter",
+        "farmPhotos": []
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

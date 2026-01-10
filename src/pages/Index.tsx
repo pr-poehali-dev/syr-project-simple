@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -62,17 +62,31 @@ export default function Index() {
     address: '',
     comment: ''
   });
-  const [siteSettings, setSiteSettings] = useState(() => {
-    const saved = localStorage.getItem('siteSettings');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    return {
-      logo: '🧀',
-      theme: 'default',
-      farmPhotos: [] as string[]
-    };
+  const [siteSettings, setSiteSettings] = useState({
+    logo: '🧀',
+    theme: 'default',
+    farmPhotos: [] as string[]
   });
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('https://functions.poehali.dev/94291b30-51cf-493d-8351-a3182150e773');
+        if (response.ok) {
+          const data = await response.json();
+          setSiteSettings(data);
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки настроек:', error);
+      }
+    };
+    
+    loadSettings();
+    
+    const interval = setInterval(loadSettings, 10000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const addToCart = (product: Product, variant?: any) => {
     setCart(prev => {
