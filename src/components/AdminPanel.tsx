@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Icon from '@/components/ui/icon';
 import { Product } from './types';
+import SiteSettings from './SiteSettings';
 
 type Order = {
   id: number;
@@ -65,6 +66,15 @@ export default function AdminPanel({ products, onProductAdd, onProductUpdate, on
     image: '',
     category: 'cheese',
     stock: 0
+  });
+
+  const [siteSettings, setSiteSettings] = useState({
+    logo: '🧀',
+    theme: 'default',
+    minDeliveryAmount: 2500,
+    siteDescription: 'Сыроварня SOBKO — натуральные продукты с любовью и заботой о вашем здоровье!',
+    telegramBotToken: '8530330128:AAH7zYq7jWo-TdGIZStP3AMDL5s_-Jzbkcg',
+    telegramChatId: '6368037525'
   });
 
   const handleAddProduct = () => {
@@ -126,10 +136,11 @@ export default function AdminPanel({ products, onProductAdd, onProductUpdate, on
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-2xl">
+          <TabsList className="grid w-full grid-cols-4 max-w-3xl">
             <TabsTrigger value="products">Товары</TabsTrigger>
             <TabsTrigger value="orders">Заказы</TabsTrigger>
             <TabsTrigger value="summary">Сводка</TabsTrigger>
+            <TabsTrigger value="settings">Настройки</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products" className="space-y-4">
@@ -252,6 +263,17 @@ export default function AdminPanel({ products, onProductAdd, onProductUpdate, on
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <h2 className="text-2xl font-heading font-bold mb-6">Настройки сайта</h2>
+            <SiteSettings
+              settings={siteSettings}
+              onSave={(newSettings) => {
+                setSiteSettings(newSettings);
+                alert('Настройки сохранены!');
+              }}
+            />
           </TabsContent>
         </Tabs>
       </main>

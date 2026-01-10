@@ -1,0 +1,35 @@
+{
+  "tests": [
+    {
+      "name": "Test OPTIONS request",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Test send notification",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "botToken": "test_token",
+        "chatId": "test_chat_id",
+        "orderData": {
+          "fullName": "Test User",
+          "phone": "+7 999 123-45-67",
+          "address": "Test Address",
+          "comment": "Test comment",
+          "items": [
+            {
+              "name": "Сыр сливочный",
+              "quantity": 2,
+              "total": 900
+            }
+          ],
+          "total": 900
+        }
+      },
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}

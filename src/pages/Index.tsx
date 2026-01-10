@@ -21,6 +21,13 @@ export default function Index() {
   const [deliveryType, setDeliveryType] = useState('delivery');
   const [isAdmin, setIsAdmin] = useState(false);
   const [loginData, setLoginData] = useState({ login: '', password: '' });
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [orderForm, setOrderForm] = useState({
+    fullName: '',
+    phone: '',
+    address: '',
+    comment: ''
+  });
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -77,6 +84,14 @@ export default function Index() {
               Главная
             </button>
             <button
+              onClick={() => setCurrentPage('about')}
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                currentPage === 'about' ? 'text-primary' : 'text-foreground'
+              }`}
+            >
+              О нас
+            </button>
+            <button
               onClick={() => {
                 setCurrentPage('home');
                 setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -86,12 +101,12 @@ export default function Index() {
               Каталог
             </button>
             <button
-              onClick={() => setCurrentPage('about')}
+              onClick={() => setCurrentPage('farm')}
               className={`text-sm font-medium transition-colors hover:text-primary ${
-                currentPage === 'about' ? 'text-primary' : 'text-foreground'
+                currentPage === 'farm' ? 'text-primary' : 'text-foreground'
               }`}
             >
-              О нас
+              О нашей ферме
             </button>
             <button
               onClick={() => setCurrentPage('delivery')}
@@ -226,6 +241,7 @@ export default function Index() {
                           className="w-full"
                           size="lg"
                           disabled={deliveryType === 'delivery' && cartTotal < 2500}
+                          onClick={() => setIsCheckoutOpen(true)}
                         >
                           Оформить заказ
                         </Button>
@@ -516,12 +532,82 @@ export default function Index() {
     );
   }
 
+  const renderFarm = () => (
+    <div className="container mx-auto px-4 py-12 max-w-4xl">
+      <h2 className="text-4xl font-heading font-bold mb-8">О нашей ферме</h2>
+      <div className="space-y-8 text-lg leading-relaxed">
+        <div className="bg-secondary/30 rounded-2xl p-8">
+          <h3 className="text-3xl font-heading font-bold mb-4 text-primary">От фермы — к вашему столу</h3>
+          <p>
+            Наша ферма — это живое сердце сыроварни SOBKO. Здесь, в экологически чистом уголке 
+            Пермского края, рождается самое главное — безупречное сырье для наших продуктов.
+          </p>
+        </div>
+
+        <div>
+          <h3 className="text-2xl font-heading font-bold mb-6">Наши буренки — основа вкуса</h3>
+          <p className="mb-6">
+            Мы гордимся стадом из молочных пород, известных своим идеальным молоком:
+          </p>
+
+          <div className="space-y-6">
+            <div className="bg-card border rounded-xl p-6">
+              <h4 className="text-xl font-heading font-semibold mb-3 flex items-center gap-2">
+                <span className="text-2xl">🐄</span> Джерсейская
+              </h4>
+              <p>
+                Дает нежнейшее молоко с высоким содержанием белка и кальция. Оно сливочное и 
+                ароматное — основа для наших сыров премиум-класса.
+              </p>
+            </div>
+
+            <div className="bg-card border rounded-xl p-6">
+              <h4 className="text-xl font-heading font-semibold mb-3 flex items-center gap-2">
+                <span className="text-2xl">🐄</span> Айрширская
+              </h4>
+              <p>
+                Ее молоко сбалансированное и особенно полезное, идеально для творога, кефира и 
+                классических сыров.
+              </p>
+            </div>
+
+            <div className="bg-card border rounded-xl p-6">
+              <h4 className="text-xl font-heading font-semibold mb-3 flex items-center gap-2">
+                <span className="text-2xl">🐄</span> Суксунская (красная горбатовская)
+              </h4>
+              <p>
+                Наша местная гордость! Порода, адаптированная к уральскому климату, даёт целебное, 
+                богатое витаминами молоко.
+              </p>
+            </div>
+          </div>
+
+          <p className="mt-6 text-center text-lg font-medium">
+            Все наши коровы питаются отборными травами и зерном. Мы знаем каждую по имени.
+          </p>
+        </div>
+
+        <div className="bg-primary/10 rounded-2xl p-8 border-2 border-primary/20">
+          <p className="text-lg">
+            <strong>Мы не используем стимуляторы роста или антибиотики.</strong> Наша философия — 
+            гармония с природой. Только так можно получить по-настоящему качественные, безопасные 
+            и вкусные продукты от здоровых и счастливых животных.
+          </p>
+          <p className="mt-4 text-lg font-semibold text-primary">
+            Это и есть наш секрет — любовь к земле и ответственность за тех, кого приручили.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       {renderHeader()}
       <main className="py-8">
         {currentPage === 'home' && renderHome()}
         {currentPage === 'about' && renderAbout()}
+        {currentPage === 'farm' && renderFarm()}
         {currentPage === 'delivery' && renderDelivery()}
         {currentPage === 'contacts' && renderContacts()}
       </main>
@@ -574,6 +660,125 @@ export default function Index() {
             <Button className="w-full" onClick={handleLogin}>Войти</Button>
             <Button variant="outline" className="w-full">
               Регистрация
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Оформление заказа</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">ФИО <span className="text-red-500">*</span></Label>
+              <Input
+                id="fullName"
+                placeholder="Иванов Иван Иванович"
+                value={orderForm.fullName}
+                onChange={(e) => setOrderForm({ ...orderForm, fullName: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Номер телефона <span className="text-red-500">*</span></Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+7 (999) 123-45-67"
+                value={orderForm.phone}
+                onChange={(e) => setOrderForm({ ...orderForm, phone: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">
+                {deliveryType === 'delivery' ? 'Адрес доставки' : 'Способ получения'} <span className="text-red-500">*</span>
+              </Label>
+              {deliveryType === 'delivery' ? (
+                <Input
+                  id="address"
+                  placeholder="Улица, дом, квартира"
+                  value={orderForm.address}
+                  onChange={(e) => setOrderForm({ ...orderForm, address: e.target.value })}
+                  required
+                />
+              ) : (
+                <Input
+                  id="address"
+                  value="Самовывоз из магазина"
+                  disabled
+                />
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="comment">Комментарий к заказу</Label>
+              <Input
+                id="comment"
+                placeholder="Пожелания к заказу"
+                value={orderForm.comment}
+                onChange={(e) => setOrderForm({ ...orderForm, comment: e.target.value })}
+              />
+            </div>
+            <div className="border-t pt-4">
+              <div className="space-y-2 mb-4">
+                <p className="text-sm font-medium">Ваш заказ:</p>
+                {cart.map(item => (
+                  <div key={item.id} className="flex justify-between text-sm">
+                    <span>{item.name} × {item.quantity}</span>
+                    <span>{item.price * item.quantity} ₽</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between font-semibold text-lg mb-4">
+                <span>Итого:</span>
+                <span>{cartTotal} ₽</span>
+              </div>
+            </div>
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={async () => {
+                if (!orderForm.fullName || !orderForm.phone || (deliveryType === 'delivery' && !orderForm.address)) {
+                  alert('Пожалуйста, заполните все обязательные поля');
+                  return;
+                }
+
+                const orderData = {
+                  fullName: orderForm.fullName,
+                  phone: orderForm.phone,
+                  address: deliveryType === 'delivery' ? orderForm.address : 'Самовывоз',
+                  comment: orderForm.comment,
+                  items: cart.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    total: item.price * item.quantity
+                  })),
+                  total: cartTotal
+                };
+
+                try {
+                  await fetch('https://functions.poehali.dev/b94615ae-f896-4593-b92c-4cab4c6e7b41', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      botToken: '8530330128:AAH7zYq7jWo-TdGIZStP3AMDL5s_-Jzbkcg',
+                      chatId: '6368037525',
+                      orderData
+                    })
+                  });
+                } catch (error) {
+                  console.error('Ошибка отправки уведомления:', error);
+                }
+
+                alert('Заказ оформлен! Мы свяжемся с вами в ближайшее время.');
+                setIsCheckoutOpen(false);
+                setOrderForm({ fullName: '', phone: '', address: '', comment: '' });
+                setCart([]);
+              }}
+            >
+              Подтвердить заказ
             </Button>
           </div>
         </DialogContent>
