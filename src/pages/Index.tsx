@@ -40,6 +40,11 @@ export default function Index() {
     address: '',
     comment: ''
   });
+  const [siteSettings, setSiteSettings] = useState({
+    logo: '🧀',
+    theme: 'default',
+    farmPhotos: [] as string[]
+  });
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -113,6 +118,9 @@ export default function Index() {
         onOrderDelete={(id) => {
           setOrders(orders.filter(o => o.id !== id));
         }}
+        onSettingsUpdate={(settings) => {
+          setSiteSettings(settings);
+        }}
         onLogout={handleLogout}
       />
     );
@@ -132,6 +140,7 @@ export default function Index() {
         deliveryType={deliveryType}
         setDeliveryType={setDeliveryType}
         setIsCheckoutOpen={setIsCheckoutOpen}
+        logo={siteSettings.logo}
       />
       
       <main className="py-8">
@@ -144,7 +153,7 @@ export default function Index() {
           />
         )}
         {currentPage === 'about' && <AboutPage />}
-        {currentPage === 'farm' && <FarmPage />}
+        {currentPage === 'farm' && <FarmPage farmPhotos={siteSettings.farmPhotos} />}
         {currentPage === 'delivery' && <DeliveryPage />}
         {currentPage === 'contacts' && <ContactsPage />}
       </main>

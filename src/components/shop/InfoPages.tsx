@@ -40,7 +40,7 @@ export function AboutPage() {
   );
 }
 
-export function FarmPage() {
+export function FarmPage({ farmPhotos = [] }: { farmPhotos?: string[] }) {
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
       <h2 className="text-4xl font-heading font-bold mb-8">О нашей ферме</h2>
@@ -96,14 +96,21 @@ export function FarmPage() {
           </p>
         </div>
 
-        <div>
-          <h3 className="text-2xl font-heading font-bold mb-6 text-center">Наша ферма</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-muted rounded-xl h-64 flex items-center justify-center">
-              <p className="text-muted-foreground">Фото будет добавлено через админ-панель</p>
+        {farmPhotos.length > 0 && (
+          <div>
+            <h3 className="text-2xl font-heading font-bold mb-6 text-center">Наша ферма</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {farmPhotos.map((photo, idx) => (
+                <img
+                  key={idx}
+                  src={photo}
+                  alt={`Ферма ${idx + 1}`}
+                  className="w-full h-64 object-cover rounded-xl"
+                />
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
         <div className="bg-primary/10 rounded-2xl p-8 border-2 border-primary/20">
           <p className="text-lg">

@@ -29,10 +29,11 @@ type AdminPanelProps = {
   onProductDelete: (id: number) => void;
   onOrderUpdate: (id: number, updates: Partial<Order>) => void;
   onOrderDelete: (id: number) => void;
+  onSettingsUpdate?: (settings: any) => void;
   onLogout: () => void;
 };
 
-export default function AdminPanel({ products, orders, onProductAdd, onProductUpdate, onProductDelete, onOrderUpdate, onOrderDelete, onLogout }: AdminPanelProps) {
+export default function AdminPanel({ products, orders, onProductAdd, onProductUpdate, onProductDelete, onOrderUpdate, onOrderDelete, onSettingsUpdate, onLogout }: AdminPanelProps) {
 
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -203,9 +204,28 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
                       <div>
                         <p className="text-sm font-semibold mb-2">Состав заказа:</p>
                         {order.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between text-sm py-1 border-b last:border-0">
-                            <span>{item.product.name} × {item.quantity} шт</span>
-                            <span className="font-medium">{item.product.price * item.quantity} ₽</span>
+                          <div key={idx} className="flex justify-between items-center text-sm py-2 border-b last:border-0 gap-2">
+                            <div className="flex-1">
+                              <p className="font-medium">{item.product.name}</p>
+                              <p className="text-xs text-muted-foreground">{item.product.weight}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const newQuantity = Number(e.target.value);
+                                  const updatedItems = [...order.items];
+                                  updatedItems[idx] = { ...item, quantity: newQuantity };
+                                  const newTotal = updatedItems.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+                                  onOrderUpdate(order.id, { items: updatedItems, total: newTotal });
+                                }}
+                                className="w-16 h-8 text-center"
+                                min="1"
+                              />
+                              <span className="text-xs">×</span>
+                              <span className="font-medium min-w-[60px] text-right">{item.product.price * item.quantity} ₽</span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -271,6 +291,9 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
               settings={siteSettings}
               onSave={(newSettings) => {
                 setSiteSettings(newSettings);
+                if (onSettingsUpdate) {
+                  onSettingsUpdate(newSettings);
+                }
                 alert('Настройки сохранены!');
               }}
             />

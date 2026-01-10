@@ -19,6 +19,7 @@ type HeaderProps = {
   deliveryType: string;
   setDeliveryType: (type: string) => void;
   setIsCheckoutOpen: (open: boolean) => void;
+  logo?: string;
 };
 
 export default function Header({
@@ -32,14 +33,19 @@ export default function Header({
   removeFromCart,
   deliveryType,
   setDeliveryType,
-  setIsCheckoutOpen
+  setIsCheckoutOpen,
+  logo
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="text-3xl">🧀</div>
+            {logo && logo !== '🧀' ? (
+              <img src={logo} alt="Логотип" className="w-12 h-12 object-contain" />
+            ) : (
+              <div className="text-3xl">🧀</div>
+            )}
             <div>
               <h1 className="text-xl font-heading font-bold text-primary">Сыроварня SOBKO</h1>
               <p className="text-xs text-muted-foreground">Натуральные продукты</p>
