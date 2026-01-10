@@ -160,13 +160,20 @@ export default function CheckoutDialog({
                 customerEmail: customerEmail
               };
 
-              const updatedOrders = [...orders, newOrder];
-              setOrders(updatedOrders);
-              localStorage.setItem('orders', JSON.stringify(updatedOrders));
-
-              const chatIds = ['6368037525', '295345720'];
-              
               try {
+                const saveResponse = await fetch('https://functions.poehali.dev/20ab4828-3a5a-440b-a3f7-ac65b2f84748', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(newOrder)
+                });
+                
+                if (saveResponse.ok) {
+                  const savedOrder = await saveResponse.json();
+                  setOrders([...orders, savedOrder]);
+                }
+
+                const chatIds = ['6368037525', '295345720'];
+                
                 for (const chatId of chatIds) {
                   await fetch('https://functions.poehali.dev/b94615ae-f896-4593-b92c-4cab4c6e7b41', {
                     method: 'POST',
@@ -179,7 +186,7 @@ export default function CheckoutDialog({
                   });
                 }
               } catch (error) {
-                console.error('Ошибка отправки уведомления:', error);
+                console.error('Ошибка создания заказа:', error);
               }
 
               alert('Заказ оформлен! Мы свяжемся с вами в ближайшее время.');

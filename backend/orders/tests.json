@@ -1,0 +1,27 @@
+{
+  "tests": [
+    {
+      "name": "Get orders",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Create order",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "customerName": "Test User",
+        "phone": "+79991234567",
+        "total": 1000,
+        "status": "new",
+        "items": []
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

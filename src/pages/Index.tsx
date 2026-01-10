@@ -50,12 +50,14 @@ export default function Index() {
     const saved = localStorage.getItem('customers');
     return saved ? JSON.parse(saved) : [];
   });
-  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
-  const [showCustomerAccount, setShowCustomerAccount] = useState(false);
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('orders');
-    return saved ? JSON.parse(saved).map((o: any) => ({ ...o, date: new Date(o.date) })) : [];
+  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(() => {
+    const saved = sessionStorage.getItem('currentCustomer');
+    return saved ? JSON.parse(saved) : null;
   });
+  const [showCustomerAccount, setShowCustomerAccount] = useState(() => {
+    return sessionStorage.getItem('showCustomerAccount') === 'true';
+  });
+  const [orders, setOrders] = useState<Order[]>([]);
   const [orderForm, setOrderForm] = useState({
     fullName: '',
     phone: '',
@@ -109,16 +111,31 @@ export default function Index() {
         setProducts(initialProducts);
       }
     };
+
+    const loadOrders = async () => {
+      try {
+        const response = await fetch('https://functions.poehali.dev/20ab4828-3a5a-440b-a3f7-ac65b2f84748');
+        if (response.ok) {
+          const data = await response.json();
+          setOrders(data.map((o: any) => ({ ...o, date: new Date(o.date) })));
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки заказов:', error);
+      }
+    };
     
     loadSettings();
     loadProducts();
+    loadOrders();
     
     const interval = setInterval(loadSettings, 10000);
     const productsInterval = setInterval(loadProducts, 5000);
+    const ordersInterval = setInterval(loadOrders, 3000);
     
     return () => {
       clearInterval(interval);
       clearInterval(productsInterval);
+      clearInterval(ordersInterval);
     };
   }, []);
 
@@ -189,8 +206,10 @@ export default function Index() {
       const customer = customers.find(c => c.email === loginData.login && c.password === loginData.password);
       if (customer) {
         setCurrentCustomer(customer);
+        sessionStorage.setItem('currentCustomer', JSON.stringify(customer));
         setIsAuthOpen(false);
         setShowCustomerAccount(true);
+        sessionStorage.setItem('showCustomerAccount', 'true');
       } else {
         alert('Неверный логин или пароль');
       }
@@ -209,33 +228,66 @@ export default function Index() {
       return;
     }
     
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const userConfirmed = window.confirm(
-      `На email ${registerData.email} отправлен код подтверждения: ${verificationCode}\n\n` +
-      `В реальной системе код придёт на почту. Для демонстрации:\n` +
-      `Нажмите OK чтобы подтвердить, что это ваш email.`
-    );
-    
-    if (!userConfirmed) {
-      return;
-    }
-    
     const exists = customers.find(c => c.email === registerData.email);
     if (exists) {
       alert('Пользователь с таким email уже существует');
       return;
     }
     
-    const newCustomer: Customer = { ...registerData };
-    const updatedCustomers = [...customers, newCustomer];
-    setCustomers(updatedCustomers);
-    localStorage.setItem('customers', JSON.stringify(updatedCustomers));
-    setCurrentCustomer(newCustomer);
-    setIsAuthOpen(false);
-    setShowCustomerAccount(true);
-    setRegisterData({ email: '', password: '', name: '' });
-    setIsRegisterMode(false);
-    addNotification('Регистрация успешна! Добро пожаловать!', 'success');
+    try {
+      const generateResponse = await fetch('https://functions.poehali.dev/45dfd3b7-0e4e-4c7f-bd98-9e778dd19ff3', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate', email: registerData.email })
+      });
+      
+      if (!generateResponse.ok) {
+        alert('Ошибка отправки кода подтверждения');
+        return;
+      }
+      
+      const { code, message } = await generateResponse.json();
+      
+      const userCode = window.prompt(
+        `${message}\n\n` +
+        `⚠️ В реальной системе код придёт на ваш email.\n` +
+        `Для демонстрации код отображается здесь: ${code}\n\n` +
+        `Введите код подтверждения:`
+      );
+      
+      if (!userCode) {
+        return;
+      }
+      
+      const verifyResponse = await fetch('https://functions.poehali.dev/45dfd3b7-0e4e-4c7f-bd98-9e778dd19ff3', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify', email: registerData.email, code: userCode })
+      });
+      
+      const verifyResult = await verifyResponse.json();
+      
+      if (!verifyResult.success) {
+        alert(verifyResult.error || 'Неверный код подтверждения');
+        return;
+      }
+      
+      const newCustomer: Customer = { ...registerData };
+      const updatedCustomers = [...customers, newCustomer];
+      setCustomers(updatedCustomers);
+      localStorage.setItem('customers', JSON.stringify(updatedCustomers));
+      setCurrentCustomer(newCustomer);
+      sessionStorage.setItem('currentCustomer', JSON.stringify(newCustomer));
+      setIsAuthOpen(false);
+      setShowCustomerAccount(true);
+      sessionStorage.setItem('showCustomerAccount', 'true');
+      setRegisterData({ email: '', password: '', name: '' });
+      setIsRegisterMode(false);
+      addNotification('Email подтверждён! Регистрация успешна!', 'success');
+    } catch (error) {
+      console.error('Ошибка регистрации:', error);
+      alert('Ошибка при регистрации. Попробуйте позже.');
+    }
   };
 
   const handleProductAdd = async (product: Omit<Product, 'id'>) => {
@@ -303,9 +355,14 @@ export default function Index() {
         orders={orders}
         onLogout={() => {
           setCurrentCustomer(null);
+          sessionStorage.removeItem('currentCustomer');
           setShowCustomerAccount(false);
+          sessionStorage.removeItem('showCustomerAccount');
         }}
-        onBackToShop={() => setShowCustomerAccount(false)}
+        onBackToShop={() => {
+          setShowCustomerAccount(false);
+          sessionStorage.setItem('showCustomerAccount', 'false');
+        }}
       />
     );
   }
@@ -318,31 +375,51 @@ export default function Index() {
         onProductAdd={handleProductAdd}
         onProductUpdate={handleProductUpdate}
         onProductDelete={handleProductDelete}
-        onOrderUpdate={(id, updates) => {
+        onOrderUpdate={async (id, updates) => {
           const oldOrder = orders.find(o => o.id === id);
-          const newOrders = orders.map(o => o.id === id ? { ...o, ...updates } : o);
-          setOrders(newOrders);
-          localStorage.setItem('orders', JSON.stringify(newOrders));
+          const updatedOrder = { ...oldOrder, ...updates };
           
-          if (oldOrder && updates.status && updates.status !== oldOrder.status && oldOrder.customerEmail) {
-            const statusText = {
-              'new': 'Новый',
-              'preparing': 'Готовится',
-              'ready': 'Готов к выдаче',
-              'completed': 'Завершён'
-            }[updates.status] || updates.status;
+          try {
+            const response = await fetch('https://functions.poehali.dev/20ab4828-3a5a-440b-a3f7-ac65b2f84748', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updatedOrder)
+            });
             
-            addNotification(`Заказ #${id} — статус изменён на "${statusText}"`, 'success');
-          }
-          
-          if (updates.total !== undefined && oldOrder && updates.total !== oldOrder.total) {
-            addNotification(`Заказ #${id} — сумма обновлена: ${updates.total} ₽`, 'info');
+            if (response.ok) {
+              const newOrders = orders.map(o => o.id === id ? updatedOrder : o);
+              setOrders(newOrders);
+              
+              if (oldOrder && updates.status && updates.status !== oldOrder.status && oldOrder.customerEmail) {
+                const statusText = {
+                  'new': 'Новый',
+                  'preparing': 'Готовится',
+                  'ready': 'Готов к выдаче',
+                  'completed': 'Завершён'
+                }[updates.status] || updates.status;
+                
+                addNotification(`Заказ #${id} — статус изменён на "${statusText}"`, 'success');
+              }
+              
+              if (updates.total !== undefined && oldOrder && updates.total !== oldOrder.total) {
+                addNotification(`Заказ #${id} — сумма обновлена: ${updates.total} ₽`, 'info');
+              }
+            }
+          } catch (error) {
+            console.error('Ошибка обновления заказа:', error);
           }
         }}
-        onOrderDelete={(id) => {
-          const newOrders = orders.filter(o => o.id !== id);
-          setOrders(newOrders);
-          localStorage.setItem('orders', JSON.stringify(newOrders));
+        onOrderDelete={async (id) => {
+          try {
+            const response = await fetch(`https://functions.poehali.dev/20ab4828-3a5a-440b-a3f7-ac65b2f84748?id=${id}`, {
+              method: 'DELETE'
+            });
+            if (response.ok) {
+              setOrders(orders.filter(o => o.id !== id));
+            }
+          } catch (error) {
+            console.error('Ошибка удаления заказа:', error);
+          }
         }}
         onSettingsUpdate={(settings) => {
           setSiteSettings(settings);

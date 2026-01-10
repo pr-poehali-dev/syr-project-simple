@@ -1,4 +1,6 @@
 {
+  "email-verify": "https://functions.poehali.dev/45dfd3b7-0e4e-4c7f-bd98-9e778dd19ff3",
+  "orders": "https://functions.poehali.dev/20ab4828-3a5a-440b-a3f7-ac65b2f84748",
   "products": "https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100",
   "site-settings": "https://functions.poehali.dev/94291b30-51cf-493d-8351-a3182150e773",
   "telegram-notify": "https://functions.poehali.dev/b94615ae-f896-4593-b92c-4cab4c6e7b41"
