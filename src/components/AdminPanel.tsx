@@ -11,6 +11,7 @@ import Icon from '@/components/ui/icon';
 import { Product, ProductVariant } from './types';
 import SiteSettings from './SiteSettings';
 import ProductVariantsManager from './ProductVariantsManager';
+import DomainSetup from './DomainSetup';
 
 type Order = {
   id: number;
@@ -139,11 +140,12 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-5 max-w-4xl">
             <TabsTrigger value="products">Товары</TabsTrigger>
             <TabsTrigger value="orders">Заказы</TabsTrigger>
             <TabsTrigger value="summary">Сводка</TabsTrigger>
             <TabsTrigger value="settings">Настройки</TabsTrigger>
+            <TabsTrigger value="domain">Домен</TabsTrigger>
           </TabsList>
 
           <TabsContent value="products" className="space-y-4">
@@ -423,6 +425,11 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
                 }
               }}
             />
+          </TabsContent>
+
+          <TabsContent value="domain">
+            <h2 className="text-2xl font-heading font-bold mb-6">Настройка домена</h2>
+            <DomainSetup />
           </TabsContent>
         </Tabs>
       </main>

@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Get products",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Add product",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "name": "Test Product",
+        "price": 100,
+        "weight": "100g",
+        "category": "cheese",
+        "stock": 10,
+        "image": "test.jpg"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": "number",
+        "name": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

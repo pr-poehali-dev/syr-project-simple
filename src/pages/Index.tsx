@@ -35,7 +35,7 @@ type Customer = {
 export default function Index() {
   const { notifications, addNotification, dismissNotification } = useNotifications();
   
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -81,11 +81,45 @@ export default function Index() {
       }
     };
     
+    const loadProducts = async () => {
+      try {
+        const response = await fetch('https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.length === 0) {
+            setProducts(initialProducts);
+            for (const product of initialProducts) {
+              await fetch('https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(product)
+              });
+            }
+            const reloadResponse = await fetch('https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100');
+            if (reloadResponse.ok) {
+              const reloadedData = await reloadResponse.json();
+              setProducts(reloadedData);
+            }
+          } else {
+            setProducts(data);
+          }
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки товаров:', error);
+        setProducts(initialProducts);
+      }
+    };
+    
     loadSettings();
+    loadProducts();
     
     const interval = setInterval(loadSettings, 10000);
+    const productsInterval = setInterval(loadProducts, 5000);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearInterval(productsInterval);
+    };
   }, []);
 
   const addToCart = (product: Product, variant?: any) => {
@@ -163,16 +197,35 @@ export default function Index() {
     }
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!registerData.email || !registerData.password || !registerData.name) {
       alert('Заполните все поля');
       return;
     }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(registerData.email)) {
+      alert('Введите корректный email адрес');
+      return;
+    }
+    
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const userConfirmed = window.confirm(
+      `На email ${registerData.email} отправлен код подтверждения: ${verificationCode}\n\n` +
+      `В реальной системе код придёт на почту. Для демонстрации:\n` +
+      `Нажмите OK чтобы подтвердить, что это ваш email.`
+    );
+    
+    if (!userConfirmed) {
+      return;
+    }
+    
     const exists = customers.find(c => c.email === registerData.email);
     if (exists) {
       alert('Пользователь с таким email уже существует');
       return;
     }
+    
     const newCustomer: Customer = { ...registerData };
     const updatedCustomers = [...customers, newCustomer];
     setCustomers(updatedCustomers);
@@ -182,19 +235,58 @@ export default function Index() {
     setShowCustomerAccount(true);
     setRegisterData({ email: '', password: '', name: '' });
     setIsRegisterMode(false);
+    addNotification('Регистрация успешна! Добро пожаловать!', 'success');
   };
 
-  const handleProductAdd = (product: Omit<Product, 'id'>) => {
-    const newId = Math.max(...products.map(p => p.id)) + 1;
-    setProducts([...products, { ...product, id: newId }]);
+  const handleProductAdd = async (product: Omit<Product, 'id'>) => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(product)
+      });
+      if (response.ok) {
+        const newProduct = await response.json();
+        setProducts([...products, newProduct]);
+        addNotification('Товар добавлен и виден всем пользователям', 'success');
+      }
+    } catch (error) {
+      console.error('Ошибка добавления товара:', error);
+      alert('Ошибка добавления товара');
+    }
   };
 
-  const handleProductUpdate = (id: number, updates: Partial<Product>) => {
-    setProducts(products.map(p => p.id === id ? { ...p, ...updates } : p));
+  const handleProductUpdate = async (id: number, updates: Partial<Product>) => {
+    try {
+      const updatedProduct = products.find(p => p.id === id);
+      if (!updatedProduct) return;
+      
+      const response = await fetch('https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...updatedProduct, ...updates })
+      });
+      if (response.ok) {
+        setProducts(products.map(p => p.id === id ? { ...p, ...updates } : p));
+        addNotification('Товар обновлён', 'success');
+      }
+    } catch (error) {
+      console.error('Ошибка обновления товара:', error);
+    }
   };
 
-  const handleProductDelete = (id: number) => {
-    setProducts(products.filter(p => p.id !== id));
+  const handleProductDelete = async (id: number) => {
+    try {
+      const response = await fetch(`https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100?id=${id}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        setProducts(products.filter(p => p.id !== id));
+        addNotification('Товар удалён', 'info');
+      }
+    } catch (error) {
+      console.error('Ошибка удаления товара:', error);
+    }
   };
 
   const handleLogout = () => {
