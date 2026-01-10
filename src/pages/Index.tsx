@@ -1,8 +1,4 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from 'react';
 import AdminPanel from '@/components/AdminPanel';
 import Header from '@/components/shop/Header';
 import HomePage from '@/components/shop/HomePage';
@@ -10,7 +6,11 @@ import { AboutPage, FarmPage, DeliveryPage, ContactsPage } from '@/components/sh
 import CheckoutDialog from '@/components/shop/CheckoutDialog';
 import CustomerAccount from '@/components/CustomerAccount';
 import NotificationToast, { useNotifications } from '@/components/NotificationToast';
-import { Product, CartItem, products as initialProducts } from '@/components/types';
+import AuthDialog from '@/components/AuthDialog';
+import { Product, CartItem } from '@/components/types';
+import { useDataLoader } from '@/hooks/useDataLoader';
+import { useAuthHandlers } from '@/hooks/useAuthHandlers';
+import { useProductHandlers } from '@/hooks/useProductHandlers';
 
 type Order = {
   id: number;
@@ -70,78 +70,31 @@ export default function Index() {
     farmPhotos: [] as string[]
   });
 
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const response = await fetch('https://functions.poehali.dev/94291b30-51cf-493d-8351-a3182150e773');
-        if (response.ok) {
-          const data = await response.json();
-          setSiteSettings(data);
-        }
-      } catch (error) {
-        console.error('Ошибка загрузки настроек:', error);
-      }
-    };
-    
-    const loadProducts = async () => {
-      try {
-        const response = await fetch('https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.length === 0) {
-            setProducts(initialProducts);
-            for (const product of initialProducts) {
-              await fetch('https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(product)
-              });
-            }
-            const reloadResponse = await fetch('https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100');
-            if (reloadResponse.ok) {
-              const reloadedData = await reloadResponse.json();
-              setProducts(reloadedData);
-            }
-          } else {
-            setProducts(data);
-          }
-        }
-      } catch (error) {
-        console.error('Ошибка загрузки товаров:', error);
-        setProducts(initialProducts);
-      }
-    };
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
-    const loadOrders = async () => {
-      try {
-        const response = await fetch('https://functions.poehali.dev/20ab4828-3a5a-440b-a3f7-ac65b2f84748');
-        if (response.ok) {
-          const data = await response.json();
-          setOrders(data.map((o: any) => ({ ...o, date: new Date(o.date) })));
-        }
-      } catch (error) {
-        console.error('Ошибка загрузки заказов:', error);
-      }
-    };
-    
-    loadSettings();
-    loadProducts();
-    loadOrders();
-    
-    const interval = setInterval(loadSettings, 10000);
-    const productsInterval = setInterval(loadProducts, 5000);
-    const ordersInterval = setInterval(loadOrders, 3000);
-    
-    return () => {
-      clearInterval(interval);
-      clearInterval(productsInterval);
-      clearInterval(ordersInterval);
-    };
-  }, []);
+  useDataLoader(setProducts, setOrders, setSiteSettings);
+
+  const { handleLogin: authLogin, handleRegister: authRegister } = useAuthHandlers({
+    customers,
+    setCustomers,
+    setCurrentCustomer,
+    setIsAdmin,
+    setIsAuthOpen,
+    setShowAdminPanel,
+    setShowCustomerAccount,
+    setRegisterData,
+    setIsRegisterMode,
+    addNotification
+  });
+
+  const { handleProductAdd, handleProductUpdate, handleProductDelete } = useProductHandlers({
+    products,
+    setProducts,
+    addNotification
+  });
 
   const addToCart = (product: Product, variant?: any) => {
     setCart(prev => {
-      const cartKey = variant ? `${product.id}-${variant.name}` : product.id.toString();
       const existing = prev.find(item => {
         if (variant) {
           return item.id === product.id && item.selectedVariant?.name === variant.name;
@@ -197,156 +150,10 @@ export default function Index() {
     ? products
     : products.filter(p => p.category === activeCategory);
 
-  const handleLogin = () => {
-    if (loginData.login === 'admmisSOBKO' && loginData.password === 'Sobko220!') {
-      setIsAdmin(true);
-      setIsAuthOpen(false);
-      setShowAdminPanel(true);
-    } else {
-      const customer = customers.find(c => c.email === loginData.login && c.password === loginData.password);
-      if (customer) {
-        setCurrentCustomer(customer);
-        sessionStorage.setItem('currentCustomer', JSON.stringify(customer));
-        setIsAuthOpen(false);
-        setShowCustomerAccount(true);
-        sessionStorage.setItem('showCustomerAccount', 'true');
-      } else {
-        alert('Неверный логин или пароль');
-      }
-    }
-  };
-
-  const handleRegister = async () => {
-    if (!registerData.email || !registerData.password || !registerData.name) {
-      alert('Заполните все поля');
-      return;
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(registerData.email)) {
-      alert('Введите корректный email адрес');
-      return;
-    }
-    
-    const exists = customers.find(c => c.email === registerData.email);
-    if (exists) {
-      alert('Пользователь с таким email уже существует');
-      return;
-    }
-    
-    try {
-      const generateResponse = await fetch('https://functions.poehali.dev/45dfd3b7-0e4e-4c7f-bd98-9e778dd19ff3', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate', email: registerData.email })
-      });
-      
-      if (!generateResponse.ok) {
-        alert('Ошибка отправки кода подтверждения');
-        return;
-      }
-      
-      const { code, message } = await generateResponse.json();
-      
-      const userCode = window.prompt(
-        `${message}\n\n` +
-        `⚠️ В реальной системе код придёт на ваш email.\n` +
-        `Для демонстрации код отображается здесь: ${code}\n\n` +
-        `Введите код подтверждения:`
-      );
-      
-      if (!userCode) {
-        return;
-      }
-      
-      const verifyResponse = await fetch('https://functions.poehali.dev/45dfd3b7-0e4e-4c7f-bd98-9e778dd19ff3', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'verify', email: registerData.email, code: userCode })
-      });
-      
-      const verifyResult = await verifyResponse.json();
-      
-      if (!verifyResult.success) {
-        alert(verifyResult.error || 'Неверный код подтверждения');
-        return;
-      }
-      
-      const newCustomer: Customer = { ...registerData };
-      const updatedCustomers = [...customers, newCustomer];
-      setCustomers(updatedCustomers);
-      localStorage.setItem('customers', JSON.stringify(updatedCustomers));
-      setCurrentCustomer(newCustomer);
-      sessionStorage.setItem('currentCustomer', JSON.stringify(newCustomer));
-      setIsAuthOpen(false);
-      setShowCustomerAccount(true);
-      sessionStorage.setItem('showCustomerAccount', 'true');
-      setRegisterData({ email: '', password: '', name: '' });
-      setIsRegisterMode(false);
-      addNotification('Email подтверждён! Регистрация успешна!', 'success');
-    } catch (error) {
-      console.error('Ошибка регистрации:', error);
-      alert('Ошибка при регистрации. Попробуйте позже.');
-    }
-  };
-
-  const handleProductAdd = async (product: Omit<Product, 'id'>) => {
-    try {
-      const response = await fetch('https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(product)
-      });
-      if (response.ok) {
-        const newProduct = await response.json();
-        setProducts([...products, newProduct]);
-        addNotification('Товар добавлен и виден всем пользователям', 'success');
-      }
-    } catch (error) {
-      console.error('Ошибка добавления товара:', error);
-      alert('Ошибка добавления товара');
-    }
-  };
-
-  const handleProductUpdate = async (id: number, updates: Partial<Product>) => {
-    try {
-      const updatedProduct = products.find(p => p.id === id);
-      if (!updatedProduct) return;
-      
-      const response = await fetch('https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...updatedProduct, ...updates })
-      });
-      if (response.ok) {
-        setProducts(products.map(p => p.id === id ? { ...p, ...updates } : p));
-        addNotification('Товар обновлён', 'success');
-      }
-    } catch (error) {
-      console.error('Ошибка обновления товара:', error);
-    }
-  };
-
-  const handleProductDelete = async (id: number) => {
-    try {
-      const response = await fetch(`https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100?id=${id}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        setProducts(products.filter(p => p.id !== id));
-        addNotification('Товар удалён', 'info');
-      }
-    } catch (error) {
-      console.error('Ошибка удаления товара:', error);
-    }
-  };
-
   const handleLogout = () => {
     setIsAdmin(false);
     setCurrentPage('home');
   };
-
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   if (currentCustomer && showCustomerAccount) {
     return (
@@ -372,9 +179,26 @@ export default function Index() {
       <AdminPanel
         products={products}
         orders={orders}
-        onProductAdd={handleProductAdd}
-        onProductUpdate={handleProductUpdate}
-        onProductDelete={handleProductDelete}
+        onProductAdd={async (product) => {
+          const newProduct = await handleProductAdd(product);
+          if (newProduct) {
+            setProducts([...products, newProduct]);
+            addNotification('Товар добавлен и виден всем пользователям', 'success');
+          }
+        }}
+        onProductUpdate={async (id, updates) => {
+          const updated = await handleProductUpdate(id, updates, products);
+          if (updated) {
+            setProducts(products.map(p => p.id === id ? { ...p, ...updates } : p));
+            addNotification('Товар обновлён', 'success');
+          }
+        }}
+        onProductDelete={async (id) => {
+          const success = await handleProductDelete(id, addNotification);
+          if (success) {
+            setProducts(products.filter(p => p.id !== id));
+          }
+        }}
         onOrderUpdate={async (id, updates) => {
           const oldOrder = orders.find(o => o.id === id);
           const updatedOrder = { ...oldOrder, ...updates };
@@ -487,81 +311,18 @@ export default function Index() {
         </div>
       </footer>
 
-      <Dialog open={isAuthOpen} onOpenChange={(open) => {
-        setIsAuthOpen(open);
-        if (!open) setIsRegisterMode(false);
-      }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="font-heading">
-              {isRegisterMode ? 'Регистрация' : 'Вход в личный кабинет'}
-            </DialogTitle>
-          </DialogHeader>
-          {isRegisterMode ? (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="reg-name">Имя</Label>
-                <Input
-                  id="reg-name"
-                  placeholder="Введите ваше имя"
-                  value={registerData.name}
-                  onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reg-email">Email</Label>
-                <Input
-                  id="reg-email"
-                  type="email"
-                  placeholder="example@mail.ru"
-                  value={registerData.email}
-                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reg-password">Пароль</Label>
-                <Input
-                  id="reg-password"
-                  type="password"
-                  placeholder="Введите пароль"
-                  value={registerData.password}
-                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                />
-              </div>
-              <Button className="w-full" onClick={handleRegister}>Зарегистрироваться</Button>
-              <Button variant="outline" className="w-full" onClick={() => setIsRegisterMode(false)}>
-                Уже есть аккаунт? Войти
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email или логин</Label>
-                <Input
-                  id="email"
-                  placeholder="example@mail.ru"
-                  value={loginData.login}
-                  onChange={(e) => setLoginData({ ...loginData, login: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Пароль</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Введите пароль"
-                  value={loginData.password}
-                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                />
-              </div>
-              <Button className="w-full" onClick={handleLogin}>Войти</Button>
-              <Button variant="outline" className="w-full" onClick={() => setIsRegisterMode(true)}>
-                Регистрация
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <AuthDialog
+        isAuthOpen={isAuthOpen}
+        setIsAuthOpen={setIsAuthOpen}
+        isRegisterMode={isRegisterMode}
+        setIsRegisterMode={setIsRegisterMode}
+        loginData={loginData}
+        setLoginData={setLoginData}
+        registerData={registerData}
+        setRegisterData={setRegisterData}
+        handleLogin={() => authLogin(loginData)}
+        handleRegister={() => authRegister(registerData)}
+      />
 
       <CheckoutDialog
         isOpen={isCheckoutOpen}
