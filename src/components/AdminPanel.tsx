@@ -23,39 +23,16 @@ type Order = {
 
 type AdminPanelProps = {
   products: Product[];
+  orders: Order[];
   onProductAdd: (product: Omit<Product, 'id'>) => void;
   onProductUpdate: (id: number, product: Partial<Product>) => void;
   onProductDelete: (id: number) => void;
+  onOrderUpdate: (id: number, updates: Partial<Order>) => void;
+  onOrderDelete: (id: number) => void;
   onLogout: () => void;
 };
 
-export default function AdminPanel({ products, onProductAdd, onProductUpdate, onProductDelete, onLogout }: AdminPanelProps) {
-  const [orders] = useState<Order[]>([
-    {
-      id: 1,
-      customerName: 'Иван Петров',
-      items: [
-        { product: products[0], quantity: 2 },
-        { product: products[2], quantity: 3 }
-      ],
-      total: 1260,
-      deliveryType: 'delivery',
-      status: 'new',
-      date: new Date()
-    },
-    {
-      id: 2,
-      customerName: 'Мария Сидорова',
-      items: [
-        { product: products[0], quantity: 5 },
-        { product: products[3], quantity: 10 }
-      ],
-      total: 5050,
-      deliveryType: 'pickup',
-      status: 'preparing',
-      date: new Date()
-    }
-  ]);
+export default function AdminPanel({ products, orders, onProductAdd, onProductUpdate, onProductDelete, onOrderUpdate, onOrderDelete, onLogout }: AdminPanelProps) {
 
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -217,6 +194,12 @@ export default function AdminPanel({ products, onProductAdd, onProductUpdate, on
                   <CardContent>
                     <div className="space-y-3">
                       <div>
+                        <p className="text-sm font-semibold mb-2">Контактная информация:</p>
+                        <p className="text-sm">Телефон: {order.phone || 'Не указан'}</p>
+                        <p className="text-sm">Адрес: {order.address || 'Не указан'}</p>
+                        {order.comment && <p className="text-sm">Комментарий: {order.comment}</p>}
+                      </div>
+                      <div>
                         <p className="text-sm font-semibold mb-2">Состав заказа:</p>
                         {order.items.map((item, idx) => (
                           <div key={idx} className="flex justify-between text-sm py-1 border-b last:border-0">
@@ -228,6 +211,22 @@ export default function AdminPanel({ products, onProductAdd, onProductUpdate, on
                       <div className="border-t pt-2 flex justify-between font-semibold">
                         <span>Итого:</span>
                         <span>{order.total} ₽</span>
+                      </div>
+                      <div className="border-t pt-3 flex gap-2">
+                        <Select value={order.status} onValueChange={(value) => onOrderUpdate(order.id, { status: value as any })}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="new">Новый</SelectItem>
+                            <SelectItem value="preparing">Готовится</SelectItem>
+                            <SelectItem value="ready">Готов</SelectItem>
+                            <SelectItem value="completed">Завершён</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button variant="destructive" size="icon" onClick={() => onOrderDelete(order.id)}>
+                          <Icon name="Trash2" size={16} />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

@@ -12,6 +12,19 @@ import Icon from '@/components/ui/icon';
 import AdminPanel from '@/components/AdminPanel';
 import { Product, CartItem, products as initialProducts } from '@/components/types';
 
+type Order = {
+  id: number;
+  customerName: string;
+  phone: string;
+  address: string;
+  comment?: string;
+  items: { product: Product; quantity: number }[];
+  total: number;
+  deliveryType: string;
+  status: 'new' | 'preparing' | 'ready' | 'completed';
+  date: Date;
+};
+
 export default function Index() {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -22,6 +35,7 @@ export default function Index() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loginData, setLoginData] = useState({ login: '', password: '' });
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [orderForm, setOrderForm] = useState({
     fullName: '',
     phone: '',
@@ -147,11 +161,11 @@ export default function Index() {
                   )}
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-lg">
+              <SheetContent className="w-full sm:max-w-lg flex flex-col">
                 <SheetHeader>
                   <SheetTitle className="font-heading">Корзина</SheetTitle>
                 </SheetHeader>
-                <div className="mt-6 space-y-4">
+                <div className="mt-6 space-y-4 flex-1 overflow-y-auto">
                   {cart.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <Icon name="ShoppingCart" size={48} className="mx-auto mb-4 opacity-20" />
@@ -524,9 +538,16 @@ export default function Index() {
     return (
       <AdminPanel
         products={products}
+        orders={orders}
         onProductAdd={handleProductAdd}
         onProductUpdate={handleProductUpdate}
         onProductDelete={handleProductDelete}
+        onOrderUpdate={(id, updates) => {
+          setOrders(orders.map(o => o.id === id ? { ...o, ...updates } : o));
+        }}
+        onOrderDelete={(id) => {
+          setOrders(orders.filter(o => o.id !== id));
+        }}
         onLogout={handleLogout}
       />
     );
@@ -757,6 +778,21 @@ export default function Index() {
                   })),
                   total: cartTotal
                 };
+
+                const newOrder: Order = {
+                  id: orders.length + 1,
+                  customerName: orderForm.fullName,
+                  phone: orderForm.phone,
+                  address: deliveryType === 'delivery' ? orderForm.address : 'Самовывоз',
+                  comment: orderForm.comment,
+                  items: cart.map(item => ({ product: item, quantity: item.quantity })),
+                  total: cartTotal,
+                  deliveryType,
+                  status: 'new',
+                  date: new Date()
+                };
+
+                setOrders([...orders, newOrder]);
 
                 try {
                   await fetch('https://functions.poehali.dev/b94615ae-f896-4593-b92c-4cab4c6e7b41', {
