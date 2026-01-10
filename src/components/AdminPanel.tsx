@@ -46,14 +46,20 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
     stock: 0
   });
 
-  const [siteSettings, setSiteSettings] = useState({
-    logo: '🧀',
-    theme: 'default',
-    minDeliveryAmount: 2500,
-    siteDescription: 'Сыроварня SOBKO — натуральные продукты с любовью и заботой о вашем здоровье!',
-    telegramBotToken: '8530330128:AAH7zYq7jWo-TdGIZStP3AMDL5s_-Jzbkcg',
-    telegramChatId: '6368037525, 295345720',
-    farmPhotos: [] as string[]
+  const [siteSettings, setSiteSettings] = useState(() => {
+    const saved = localStorage.getItem('siteSettings');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return {
+      logo: '🧀',
+      theme: 'default',
+      minDeliveryAmount: 2500,
+      siteDescription: 'Сыроварня SOBKO — натуральные продукты с любовью и заботой о вашем здоровье!',
+      telegramBotToken: '8530330128:AAH7zYq7jWo-TdGIZStP3AMDL5s_-Jzbkcg',
+      telegramChatId: '6368037525, 295345720',
+      farmPhotos: [] as string[]
+    };
   });
 
   const handleAddProduct = () => {
@@ -105,10 +111,16 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
               <Icon name="Shield" size={24} />
               <h1 className="text-xl font-heading font-bold">Админ-панель</h1>
             </div>
-            <Button variant="secondary" onClick={onLogout}>
-              <Icon name="LogOut" size={16} className="mr-2" />
-              Выйти
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={onLogout}>
+                <Icon name="Home" size={16} className="mr-2" />
+                На сайт
+              </Button>
+              <Button variant="secondary" onClick={onLogout}>
+                <Icon name="LogOut" size={16} className="mr-2" />
+                Выйти
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -207,20 +219,39 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
                           <div key={idx} className="flex justify-between items-center text-sm py-2 border-b last:border-0 gap-2">
                             <div className="flex-1">
                               <p className="font-medium">{item.product.name}</p>
-                              <Input
-                                type="text"
-                                value={item.product.weight}
-                                onChange={(e) => {
-                                  const updatedItems = [...order.items];
-                                  updatedItems[idx] = { 
-                                    ...item, 
-                                    product: { ...item.product, weight: e.target.value }
-                                  };
-                                  onOrderUpdate(order.id, { items: updatedItems });
-                                }}
-                                className="w-24 h-7 text-xs mt-1"
-                                placeholder="500 г"
-                              />
+                              <div className="flex gap-2 mt-1">
+                                <Input
+                                  type="text"
+                                  value={item.product.weight}
+                                  onChange={(e) => {
+                                    const updatedItems = [...order.items];
+                                    updatedItems[idx] = { 
+                                      ...item, 
+                                      product: { ...item.product, weight: e.target.value }
+                                    };
+                                    const newTotal = updatedItems.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+                                    onOrderUpdate(order.id, { items: updatedItems, total: newTotal });
+                                  }}
+                                  className="w-20 h-7 text-xs"
+                                  placeholder="500 г"
+                                />
+                                <Input
+                                  type="number"
+                                  value={item.product.price}
+                                  onChange={(e) => {
+                                    const newPrice = Number(e.target.value);
+                                    const updatedItems = [...order.items];
+                                    updatedItems[idx] = { 
+                                      ...item, 
+                                      product: { ...item.product, price: newPrice }
+                                    };
+                                    const newTotal = updatedItems.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+                                    onOrderUpdate(order.id, { items: updatedItems, total: newTotal });
+                                  }}
+                                  className="w-20 h-7 text-xs"
+                                  placeholder="Цена"
+                                />
+                              </div>
                             </div>
                             <div className="flex items-center gap-2">
                               <Input

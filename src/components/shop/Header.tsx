@@ -20,6 +20,8 @@ type HeaderProps = {
   setDeliveryType: (type: string) => void;
   setIsCheckoutOpen: (open: boolean) => void;
   logo?: string;
+  isAdmin?: boolean;
+  onAdminClick?: () => void;
 };
 
 export default function Header({
@@ -34,7 +36,9 @@ export default function Header({
   deliveryType,
   setDeliveryType,
   setIsCheckoutOpen,
-  logo
+  logo,
+  isAdmin = false,
+  onAdminClick
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
@@ -105,6 +109,17 @@ export default function Header({
           </nav>
 
           <div className="flex items-center gap-3">
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onAdminClick}
+                className="relative"
+              >
+                <Icon name="Shield" size={16} className="mr-2" />
+                Админ-панель
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

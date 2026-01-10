@@ -40,10 +40,16 @@ export default function Index() {
     address: '',
     comment: ''
   });
-  const [siteSettings, setSiteSettings] = useState({
-    logo: '🧀',
-    theme: 'default',
-    farmPhotos: [] as string[]
+  const [siteSettings, setSiteSettings] = useState(() => {
+    const saved = localStorage.getItem('siteSettings');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return {
+      logo: '🧀',
+      theme: 'default',
+      farmPhotos: [] as string[]
+    };
   });
 
   const addToCart = (product: Product) => {
@@ -83,6 +89,7 @@ export default function Index() {
     if (loginData.login === 'admmisSOBKO' && loginData.password === 'Sobko220!') {
       setIsAdmin(true);
       setIsAuthOpen(false);
+      setShowAdminPanel(true);
     }
   };
 
@@ -104,7 +111,9 @@ export default function Index() {
     setCurrentPage('home');
   };
 
-  if (isAdmin) {
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+
+  if (isAdmin && showAdminPanel) {
     return (
       <AdminPanel
         products={products}
@@ -121,7 +130,9 @@ export default function Index() {
         onSettingsUpdate={(settings) => {
           setSiteSettings(settings);
         }}
-        onLogout={handleLogout}
+        onLogout={() => {
+          setShowAdminPanel(false);
+        }}
       />
     );
   }
@@ -141,6 +152,8 @@ export default function Index() {
         setDeliveryType={setDeliveryType}
         setIsCheckoutOpen={setIsCheckoutOpen}
         logo={siteSettings.logo}
+        isAdmin={isAdmin}
+        onAdminClick={() => setShowAdminPanel(true)}
       />
       
       <main className="py-8">

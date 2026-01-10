@@ -177,7 +177,10 @@ export default function SiteSettings({ settings, onSave }: SiteSettingsProps) {
         </CardContent>
       </Card>
 
-      <Button onClick={() => onSave(localSettings)} size="lg" className="w-full">
+      <Button onClick={() => {
+        localStorage.setItem('siteSettings', JSON.stringify(localSettings));
+        onSave(localSettings);
+      }} size="lg" className="w-full">
         Сохранить настройки
       </Button>
     </div>
