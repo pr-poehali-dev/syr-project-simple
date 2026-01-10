@@ -608,6 +608,16 @@ export default function Index() {
           </p>
         </div>
 
+        <div>
+          <h3 className="text-2xl font-heading font-bold mb-6 text-center">Наша ферма</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Здесь будут отображаться фото фермы из настроек */}
+            <div className="bg-muted rounded-xl h-64 flex items-center justify-center">
+              <p className="text-muted-foreground">Фото будет добавлено через админ-панель</p>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-primary/10 rounded-2xl p-8 border-2 border-primary/20">
           <p className="text-lg">
             <strong>Мы не используем стимуляторы роста или антибиотики.</strong> Наша философия — 
@@ -687,11 +697,11 @@ export default function Index() {
       </Dialog>
 
       <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="font-heading">Оформление заказа</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 overflow-y-auto flex-1">
             <div className="space-y-2">
               <Label htmlFor="fullName">ФИО <span className="text-red-500">*</span></Label>
               <Input
@@ -794,16 +804,20 @@ export default function Index() {
 
                 setOrders([...orders, newOrder]);
 
+                const chatIds = ['6368037525', '295345720'];
+                
                 try {
-                  await fetch('https://functions.poehali.dev/b94615ae-f896-4593-b92c-4cab4c6e7b41', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      botToken: '8530330128:AAH7zYq7jWo-TdGIZStP3AMDL5s_-Jzbkcg',
-                      chatId: '6368037525',
-                      orderData
-                    })
-                  });
+                  for (const chatId of chatIds) {
+                    await fetch('https://functions.poehali.dev/b94615ae-f896-4593-b92c-4cab4c6e7b41', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        botToken: '8530330128:AAH7zYq7jWo-TdGIZStP3AMDL5s_-Jzbkcg',
+                        chatId,
+                        orderData
+                      })
+                    });
+                  }
                 } catch (error) {
                   console.error('Ошибка отправки уведомления:', error);
                 }

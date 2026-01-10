@@ -14,6 +14,7 @@ type SiteSettingsProps = {
     siteDescription: string;
     telegramBotToken: string;
     telegramChatId: string;
+    farmPhotos: string[];
   };
   onSave: (settings: any) => void;
 };
@@ -116,6 +117,42 @@ export default function SiteSettings({ settings, onSave }: SiteSettingsProps) {
 
       <Card>
         <CardHeader>
+          <CardTitle className="font-heading">Фотографии фермы</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="farmPhotos">Загрузить фото фермы (до 4 штук)</Label>
+            <Input
+              id="farmPhotos"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                const readers = files.slice(0, 4).map(file => {
+                  return new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(file);
+                  });
+                });
+                
+                Promise.all(readers).then(images => {
+                  setLocalSettings({ ...localSettings, farmPhotos: images });
+                });
+              }}
+            />
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {localSettings.farmPhotos?.map((photo, idx) => (
+                <img key={idx} src={photo} alt={`Ферма ${idx + 1}`} className="w-full h-32 object-cover rounded-md" />
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="font-heading">Telegram уведомления</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -129,12 +166,12 @@ export default function SiteSettings({ settings, onSave }: SiteSettingsProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="chatId">Chat ID</Label>
+            <Label htmlFor="chatId">Chat ID (через запятую)</Label>
             <Input
               id="chatId"
               value={localSettings.telegramChatId}
               onChange={(e) => setLocalSettings({ ...localSettings, telegramChatId: e.target.value })}
-              placeholder="6368037525"
+              placeholder="6368037525, 295345720"
             />
           </div>
         </CardContent>

@@ -51,7 +51,8 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
     minDeliveryAmount: 2500,
     siteDescription: 'Сыроварня SOBKO — натуральные продукты с любовью и заботой о вашем здоровье!',
     telegramBotToken: '8530330128:AAH7zYq7jWo-TdGIZStP3AMDL5s_-Jzbkcg',
-    telegramChatId: '6368037525'
+    telegramChatId: '6368037525, 295345720',
+    farmPhotos: [] as string[]
   });
 
   const handleAddProduct = () => {
