@@ -204,13 +204,16 @@ export default function AdminPanel({ products, onProductAdd, onProductUpdate, on
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
-                      {order.items.map((item, idx) => (
-                        <div key={idx} className="flex justify-between text-sm">
-                          <span>{item.product.name} × {item.quantity}</span>
-                          <span className="font-medium">{item.product.price * item.quantity} ₽</span>
-                        </div>
-                      ))}
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-semibold mb-2">Состав заказа:</p>
+                        {order.items.map((item, idx) => (
+                          <div key={idx} className="flex justify-between text-sm py-1 border-b last:border-0">
+                            <span>{item.product.name} × {item.quantity} шт</span>
+                            <span className="font-medium">{item.product.price * item.quantity} ₽</span>
+                          </div>
+                        ))}
+                      </div>
                       <div className="border-t pt-2 flex justify-between font-semibold">
                         <span>Итого:</span>
                         <span>{order.total} ₽</span>
@@ -314,13 +317,25 @@ export default function AdminPanel({ products, onProductAdd, onProductUpdate, on
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="image">URL изображения</Label>
+              <Label htmlFor="image">Изображение товара</Label>
               <Input
                 id="image"
-                value={newProduct.image}
-                onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                placeholder="https://..."
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setNewProduct({ ...newProduct, image: reader.result as string });
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
               />
+              {newProduct.image && (
+                <img src={newProduct.image} alt="Предпросмотр" className="w-full h-32 object-cover rounded-md mt-2" />
+              )}
             </div>
             <Button onClick={handleAddProduct} className="w-full">
               Добавить товар
@@ -371,6 +386,27 @@ export default function AdminPanel({ products, onProductAdd, onProductUpdate, on
                   value={editingProduct.stock}
                   onChange={(e) => setEditingProduct({ ...editingProduct, stock: Number(e.target.value) })}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-image">Изображение товара</Label>
+                <Input
+                  id="edit-image"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setEditingProduct({ ...editingProduct, image: reader.result as string });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                {editingProduct.image && (
+                  <img src={editingProduct.image} alt="Предпросмотр" className="w-full h-32 object-cover rounded-md mt-2" />
+                )}
               </div>
               <Button onClick={handleUpdateProduct} className="w-full">
                 Сохранить изменения
