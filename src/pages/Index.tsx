@@ -9,6 +9,7 @@ import HomePage from '@/components/shop/HomePage';
 import { AboutPage, FarmPage, DeliveryPage, ContactsPage } from '@/components/shop/InfoPages';
 import CheckoutDialog from '@/components/shop/CheckoutDialog';
 import CustomerAccount from '@/components/CustomerAccount';
+import NotificationToast, { useNotifications } from '@/components/NotificationToast';
 import { Product, CartItem, products as initialProducts } from '@/components/types';
 
 type Order = {
@@ -32,6 +33,8 @@ type Customer = {
 };
 
 export default function Index() {
+  const { notifications, addNotification, dismissNotification } = useNotifications();
+  
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -49,7 +52,10 @@ export default function Index() {
   });
   const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(null);
   const [showCustomerAccount, setShowCustomerAccount] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    const saved = localStorage.getItem('orders');
+    return saved ? JSON.parse(saved).map((o: any) => ({ ...o, date: new Date(o.date) })) : [];
+  });
   const [orderForm, setOrderForm] = useState({
     fullName: '',
     phone: '',
@@ -207,10 +213,30 @@ export default function Index() {
         onProductUpdate={handleProductUpdate}
         onProductDelete={handleProductDelete}
         onOrderUpdate={(id, updates) => {
-          setOrders(orders.map(o => o.id === id ? { ...o, ...updates } : o));
+          const oldOrder = orders.find(o => o.id === id);
+          const newOrders = orders.map(o => o.id === id ? { ...o, ...updates } : o);
+          setOrders(newOrders);
+          localStorage.setItem('orders', JSON.stringify(newOrders));
+          
+          if (oldOrder && updates.status && updates.status !== oldOrder.status && oldOrder.customerEmail) {
+            const statusText = {
+              'new': 'Новый',
+              'preparing': 'Готовится',
+              'ready': 'Готов к выдаче',
+              'completed': 'Завершён'
+            }[updates.status] || updates.status;
+            
+            addNotification(`Заказ #${id} — статус изменён на "${statusText}"`, 'success');
+          }
+          
+          if (updates.total !== undefined && oldOrder && updates.total !== oldOrder.total) {
+            addNotification(`Заказ #${id} — сумма обновлена: ${updates.total} ₽`, 'info');
+          }
         }}
         onOrderDelete={(id) => {
-          setOrders(orders.filter(o => o.id !== id));
+          const newOrders = orders.filter(o => o.id !== id);
+          setOrders(newOrders);
+          localStorage.setItem('orders', JSON.stringify(newOrders));
         }}
         onSettingsUpdate={(settings) => {
           setSiteSettings(settings);
@@ -366,6 +392,11 @@ export default function Index() {
         setOrders={setOrders}
         setCart={setCart}
         customerEmail={currentCustomer?.email}
+      />
+
+      <NotificationToast
+        notifications={notifications}
+        onDismiss={dismissNotification}
       />
     </div>
   );

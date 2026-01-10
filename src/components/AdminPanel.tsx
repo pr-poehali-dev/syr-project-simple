@@ -349,11 +349,11 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
       </main>
 
       <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="font-heading">Добавить товар</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 overflow-y-auto flex-1">
             <div className="space-y-2">
               <Label htmlFor="name">Название товара</Label>
               <Input
@@ -441,12 +441,12 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
       </Dialog>
 
       <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="font-heading">Редактировать товар</DialogTitle>
           </DialogHeader>
           {editingProduct && (
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4 overflow-y-auto flex-1">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Название товара</Label>
                 <Input

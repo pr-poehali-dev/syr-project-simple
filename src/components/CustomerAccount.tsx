@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +26,23 @@ type CustomerAccountProps = {
 };
 
 export default function CustomerAccount({ customerEmail, orders, onLogout, onBackToShop }: CustomerAccountProps) {
-  const customerOrders = orders.filter(o => o.customerEmail === customerEmail);
+  const [localOrders, setLocalOrders] = useState(orders);
+
+  useEffect(() => {
+    const savedOrders = localStorage.getItem('orders');
+    if (savedOrders) {
+      const parsed = JSON.parse(savedOrders).map((o: any) => ({ ...o, date: new Date(o.date) }));
+      setLocalOrders(parsed);
+    }
+  }, []);
+
+  useEffect(() => {
+    setLocalOrders(orders);
+  }, [orders]);
+
+  const customerOrders = localOrders
+    .filter(o => o.customerEmail === customerEmail)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const getStatusColor = (status: string) => {
     switch (status) {

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +45,8 @@ export default function Header({
   isCustomer = false,
   onCustomerAccountClick
 }: HeaderProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
       <div className="container mx-auto px-4 py-4">
@@ -113,29 +116,38 @@ export default function Header({
           </nav>
 
           <div className="flex items-center gap-3">
-            {isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Icon name="Menu" size={24} />
+            </Button>
+
+            {isAdmin && !isCustomer && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onAdminClick}
-                className="relative"
+                className="relative hidden md:flex"
               >
                 <Icon name="Shield" size={16} className="mr-2" />
                 Админ-панель
               </Button>
             )}
-            {isCustomer && (
+            {isCustomer && !isAdmin && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onCustomerAccountClick}
-                className="relative"
+                className="relative hidden md:flex"
               >
                 <Icon name="User" size={16} className="mr-2" />
                 Мой кабинет
               </Button>
             )}
-            {!isCustomer && (
+            {!isCustomer && !isAdmin && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -145,6 +157,97 @@ export default function Header({
                 <Icon name="User" size={20} />
               </Button>
             )}
+
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetContent side="left">
+                <SheetHeader>
+                  <SheetTitle className="font-heading">Меню</SheetTitle>
+                </SheetHeader>
+                <nav className="flex flex-col gap-4 mt-6">
+                  <button
+                    onClick={() => {
+                      setCurrentPage('home');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="text-left text-lg font-medium transition-colors hover:text-primary"
+                  >
+                    Главная
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrentPage('about');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="text-left text-lg font-medium transition-colors hover:text-primary"
+                  >
+                    О нас
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrentPage('home');
+                      setIsMobileMenuOpen(false);
+                      setTimeout(() => document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }), 100);
+                    }}
+                    className="text-left text-lg font-medium transition-colors hover:text-primary"
+                  >
+                    Каталог
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrentPage('farm');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="text-left text-lg font-medium transition-colors hover:text-primary"
+                  >
+                    О нашей ферме
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrentPage('delivery');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="text-left text-lg font-medium transition-colors hover:text-primary"
+                  >
+                    Доставка
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrentPage('contacts');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="text-left text-lg font-medium transition-colors hover:text-primary"
+                  >
+                    Контакты
+                  </button>
+                  {isAdmin && !isCustomer && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        onAdminClick?.();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="justify-start"
+                    >
+                      <Icon name="Shield" size={16} className="mr-2" />
+                      Админ-панель
+                    </Button>
+                  )}
+                  {isCustomer && !isAdmin && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        onCustomerAccountClick?.();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="justify-start"
+                    >
+                      <Icon name="User" size={16} className="mr-2" />
+                      Мой кабинет
+                    </Button>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
 
             <Sheet>
               <SheetTrigger asChild>

@@ -157,7 +157,9 @@ export default function CheckoutDialog({
                 customerEmail: customerEmail
               };
 
-              setOrders([...orders, newOrder]);
+              const updatedOrders = [...orders, newOrder];
+              setOrders(updatedOrders);
+              localStorage.setItem('orders', JSON.stringify(updatedOrders));
 
               const chatIds = ['6368037525', '295345720'];
               
