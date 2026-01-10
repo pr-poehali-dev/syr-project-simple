@@ -9,82 +9,18 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
-
-type Product = {
-  id: number;
-  name: string;
-  price: number;
-  weight: string;
-  image: string;
-  category: string;
-  stock: number;
-};
-
-type CartItem = Product & { quantity: number };
-
-const products: Product[] = [
-  {
-    id: 1,
-    name: 'Сыр сливочный',
-    price: 450,
-    weight: '300г',
-    image: 'https://cdn.poehali.dev/projects/6f77beb1-2d46-492f-bf0f-c1c433a807c6/files/67d26890-f3fe-41d7-acc6-4aa0b7b4ca29.jpg',
-    category: 'cheese',
-    stock: 15
-  },
-  {
-    id: 2,
-    name: 'Творог деревенский',
-    price: 280,
-    weight: '500г',
-    image: 'https://cdn.poehali.dev/projects/6f77beb1-2d46-492f-bf0f-c1c433a807c6/files/c5fdc7b4-f346-4879-9d35-59dc679dae4b.jpg',
-    category: 'dairy',
-    stock: 25
-  },
-  {
-    id: 3,
-    name: 'Молоко фермерское',
-    price: 120,
-    weight: '1л',
-    image: 'https://cdn.poehali.dev/projects/6f77beb1-2d46-492f-bf0f-c1c433a807c6/files/681659b5-15bd-4ac8-be2f-c74bf064cd5d.jpg',
-    category: 'dairy',
-    stock: 40
-  },
-  {
-    id: 4,
-    name: 'Сыр с голубой плесенью',
-    price: 780,
-    weight: '250г',
-    image: 'https://cdn.poehali.dev/projects/6f77beb1-2d46-492f-bf0f-c1c433a807c6/files/67d26890-f3fe-41d7-acc6-4aa0b7b4ca29.jpg',
-    category: 'cheese',
-    stock: 8
-  },
-  {
-    id: 5,
-    name: 'Сметана',
-    price: 180,
-    weight: '400г',
-    image: 'https://cdn.poehali.dev/projects/6f77beb1-2d46-492f-bf0f-c1c433a807c6/files/c5fdc7b4-f346-4879-9d35-59dc679dae4b.jpg',
-    category: 'dairy',
-    stock: 30
-  },
-  {
-    id: 6,
-    name: 'Сыр Пармезан',
-    price: 650,
-    weight: '300г',
-    image: 'https://cdn.poehali.dev/projects/6f77beb1-2d46-492f-bf0f-c1c433a807c6/files/67d26890-f3fe-41d7-acc6-4aa0b7b4ca29.jpg',
-    category: 'cheese',
-    stock: 12
-  }
-];
+import AdminPanel from '@/components/AdminPanel';
+import { Product, CartItem, products as initialProducts } from '@/components/types';
 
 export default function Index() {
+  const [products, setProducts] = useState<Product[]>(initialProducts);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activeCategory, setActiveCategory] = useState('all');
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState('home');
   const [deliveryType, setDeliveryType] = useState('delivery');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loginData, setLoginData] = useState({ login: '', password: '' });
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -532,6 +468,43 @@ export default function Index() {
     </div>
   );
 
+  const handleLogin = () => {
+    if (loginData.login === 'admmisSOBKO' && loginData.password === 'Sobko220!') {
+      setIsAdmin(true);
+      setIsAuthOpen(false);
+    }
+  };
+
+  const handleProductAdd = (product: Omit<Product, 'id'>) => {
+    const newId = Math.max(...products.map(p => p.id)) + 1;
+    setProducts([...products, { ...product, id: newId }]);
+  };
+
+  const handleProductUpdate = (id: number, updates: Partial<Product>) => {
+    setProducts(products.map(p => p.id === id ? { ...p, ...updates } : p));
+  };
+
+  const handleProductDelete = (id: number) => {
+    setProducts(products.filter(p => p.id !== id));
+  };
+
+  const handleLogout = () => {
+    setIsAdmin(false);
+    setCurrentPage('home');
+  };
+
+  if (isAdmin) {
+    return (
+      <AdminPanel
+        products={products}
+        onProductAdd={handleProductAdd}
+        onProductUpdate={handleProductUpdate}
+        onProductDelete={handleProductDelete}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {renderHeader()}
@@ -569,14 +542,25 @@ export default function Index() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email или телефон</Label>
-              <Input id="email" placeholder="Введите email или телефон" />
+              <Label htmlFor="email">Логин</Label>
+              <Input
+                id="email"
+                placeholder="Введите логин"
+                value={loginData.login}
+                onChange={(e) => setLoginData({ ...loginData, login: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Пароль</Label>
-              <Input id="password" type="password" placeholder="Введите пароль" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="Введите пароль"
+                value={loginData.password}
+                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+              />
             </div>
-            <Button className="w-full">Войти</Button>
+            <Button className="w-full" onClick={handleLogin}>Войти</Button>
             <Button variant="outline" className="w-full">
               Регистрация
             </Button>
