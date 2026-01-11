@@ -10,8 +10,8 @@ type AuthDialogProps = {
   setIsRegisterMode: (mode: boolean) => void;
   loginData: { login: string; password: string };
   setLoginData: (data: { login: string; password: string }) => void;
-  registerData: { email: string; password: string; name: string };
-  setRegisterData: (data: { email: string; password: string; name: string }) => void;
+  registerData: { email: string; password: string; name: string; phone?: string };
+  setRegisterData: (data: { email: string; password: string; name: string; phone?: string }) => void;
   handleLogin: () => void;
   handleRegister: () => void;
 };
@@ -42,16 +42,16 @@ export default function AuthDialog({
         {isRegisterMode ? (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="reg-name">Имя</Label>
+              <Label htmlFor="reg-name">ФИО *</Label>
               <Input
                 id="reg-name"
-                placeholder="Введите ваше имя"
+                placeholder="Иванов Иван Иванович"
                 value={registerData.name}
                 onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="reg-email">Email</Label>
+              <Label htmlFor="reg-email">Email *</Label>
               <Input
                 id="reg-email"
                 type="email"
@@ -61,7 +61,17 @@ export default function AuthDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="reg-password">Пароль</Label>
+              <Label htmlFor="reg-phone">Номер телефона *</Label>
+              <Input
+                id="reg-phone"
+                type="tel"
+                placeholder="+7 999 123-45-67"
+                value={registerData.phone || ''}
+                onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reg-password">Пароль *</Label>
               <Input
                 id="reg-password"
                 type="password"

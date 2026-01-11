@@ -36,8 +36,8 @@ export default function AdminCustomersTab() {
     try {
       const token = localStorage.getItem('authToken');
       const url = search 
-        ? `${AUTH_API}/users?search=${encodeURIComponent(search)}`
-        : `${AUTH_API}/users`;
+        ? `${AUTH_API}?action=users&search=${encodeURIComponent(search)}`
+        : `${AUTH_API}?action=users`;
       
       const response = await fetch(url, {
         headers: {
@@ -101,7 +101,7 @@ export default function AdminCustomersTab() {
         updateData.password = editForm.password;
       }
 
-      const response = await fetch(`${AUTH_API}/users`, {
+      const response = await fetch(`${AUTH_API}?action=users`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

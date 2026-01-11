@@ -9,7 +9,7 @@ def get_db_connection():
     return psycopg2.connect(os.environ['DATABASE_URL'])
 
 def handler(event: dict, context) -> dict:
-    """Управление товарами магазина и аутентификация"""
+    """Управление товарами, регистрация и авторизация"""
     
     method = event.get('httpMethod', 'GET')
     path = event.get('path', '')
@@ -31,7 +31,10 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
-        if 'auth' in path or 'login' in path or 'register' in path or 'verify' in path:
+        query_params = event.get('queryStringParameters', {}) or {}
+        action = query_params.get('action', '')
+        
+        if action in ['auth', 'login', 'register', 'verify', 'profile', 'users']:
             return handle_auth(event, conn, cur)
         
         if method == 'GET':

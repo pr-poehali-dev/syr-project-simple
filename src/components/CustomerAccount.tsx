@@ -275,7 +275,7 @@ export default function CustomerAccount({ customerEmail, orders, onLogout, onBac
                   updateData.password = editForm.password;
                 }
                 
-                const response = await fetch(`${AUTH_API}/profile`, {
+                const response = await fetch(`${AUTH_API}?action=profile`, {
                   method: 'PUT',
                   headers: {
                     'Content-Type': 'application/json',
