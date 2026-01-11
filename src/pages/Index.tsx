@@ -45,17 +45,15 @@ export default function Index() {
   const [loginData, setLoginData] = useState({ login: '', password: '' });
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isRegisterMode, setIsRegisterMode] = useState(false);
-  const [registerData, setRegisterData] = useState({ email: '', password: '', name: '' });
-  const [customers, setCustomers] = useState<Customer[]>(() => {
-    const saved = localStorage.getItem('customers');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [currentCustomer, setCurrentCustomer] = useState<Customer | null>(() => {
-    const saved = sessionStorage.getItem('currentCustomer');
+  const [registerData, setRegisterData] = useState({ email: '', password: '', name: '', phone: '' });
+  const [currentCustomer, setCurrentCustomer] = useState<any>(() => {
+    const saved = localStorage.getItem('currentUser');
     return saved ? JSON.parse(saved) : null;
   });
   const [showCustomerAccount, setShowCustomerAccount] = useState(() => {
-    return sessionStorage.getItem('showCustomerAccount') === 'true';
+    const token = localStorage.getItem('authToken');
+    const user = localStorage.getItem('currentUser');
+    return !!(token && user);
   });
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderForm, setOrderForm] = useState({
@@ -75,8 +73,6 @@ export default function Index() {
   useDataLoader(setProducts, setOrders, setSiteSettings);
 
   const { handleLogin: authLogin, handleRegister: authRegister } = useAuthHandlers({
-    customers,
-    setCustomers,
     setCurrentCustomer,
     setIsAdmin,
     setIsAuthOpen,

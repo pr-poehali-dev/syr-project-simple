@@ -1,13 +1,15 @@
-type Customer = {
+const AUTH_API = 'https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100';
+
+type User = {
+  id: number;
   email: string;
-  password: string;
-  name: string;
+  full_name: string;
+  phone?: string;
+  is_admin: boolean;
 };
 
 type UseAuthHandlersProps = {
-  customers: Customer[];
-  setCustomers: (customers: Customer[]) => void;
-  setCurrentCustomer: (customer: Customer | null) => void;
+  setCurrentCustomer: (customer: any) => void;
   setIsAdmin: (isAdmin: boolean) => void;
   setIsAuthOpen: (open: boolean) => void;
   setShowAdminPanel: (show: boolean) => void;
@@ -18,8 +20,6 @@ type UseAuthHandlersProps = {
 };
 
 export function useAuthHandlers({
-  customers,
-  setCustomers,
   setCurrentCustomer,
   setIsAdmin,
   setIsAuthOpen,
@@ -30,96 +30,84 @@ export function useAuthHandlers({
   addNotification
 }: UseAuthHandlersProps) {
   
-  const handleLogin = (loginData: { login: string; password: string }) => {
-    if (loginData.login === 'admmisSOBKO' && loginData.password === 'Sobko220!') {
-      setIsAdmin(true);
-      setIsAuthOpen(false);
-      setShowAdminPanel(true);
-    } else {
-      const customer = customers.find(c => c.email === loginData.login && c.password === loginData.password);
-      if (customer) {
-        setCurrentCustomer(customer);
-        sessionStorage.setItem('currentCustomer', JSON.stringify(customer));
-        setIsAuthOpen(false);
-        setShowCustomerAccount(true);
-        sessionStorage.setItem('showCustomerAccount', 'true');
-      } else {
-        alert('Неверный логин или пароль');
+  const handleLogin = async (loginData: { login: string; password: string }) => {
+    try {
+      const response = await fetch(`${AUTH_API}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(loginData)
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        addNotification(data.error || 'Ошибка входа', 'warning');
+        return;
       }
+      
+      const { user, token } = data;
+      
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      
+      setCurrentCustomer(user);
+      setIsAuthOpen(false);
+      
+      if (user.is_admin) {
+        setIsAdmin(true);
+        setShowAdminPanel(true);
+      } else {
+        setShowCustomerAccount(true);
+      }
+      
+      addNotification('Успешный вход!', 'success');
+    } catch (error) {
+      console.error('Ошибка входа:', error);
+      addNotification('Ошибка при входе. Попробуйте позже.', 'warning');
     }
   };
 
-  const handleRegister = async (registerData: { email: string; password: string; name: string }) => {
+  const handleRegister = async (registerData: { email: string; password: string; name: string; phone?: string }) => {
     if (!registerData.email || !registerData.password || !registerData.name) {
-      alert('Заполните все поля');
+      addNotification('Заполните все поля', 'warning');
       return;
     }
     
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(registerData.email)) {
-      alert('Введите корректный email адрес');
-      return;
-    }
-    
-    const exists = customers.find(c => c.email === registerData.email);
-    if (exists) {
-      alert('Пользователь с таким email уже существует');
+      addNotification('Введите корректный email', 'warning');
       return;
     }
     
     try {
-      const generateResponse = await fetch('https://functions.poehali.dev/45dfd3b7-0e4e-4c7f-bd98-9e778dd19ff3', {
+      const response = await fetch(`${AUTH_API}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate', email: registerData.email })
+        body: JSON.stringify(registerData)
       });
       
-      if (!generateResponse.ok) {
-        alert('Ошибка отправки кода подтверждения');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        addNotification(data.error || 'Ошибка регистрации', 'warning');
         return;
       }
       
-      const { code, message } = await generateResponse.json();
+      const { user, token } = data;
       
-      const userCode = window.prompt(
-        `${message}\n\n` +
-        `⚠️ В реальной системе код придёт на ваш email.\n` +
-        `Для демонстрации код отображается здесь: ${code}\n\n` +
-        `Введите код подтверждения:`
-      );
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('currentUser', JSON.stringify(user));
       
-      if (!userCode) {
-        return;
-      }
-      
-      const verifyResponse = await fetch('https://functions.poehali.dev/45dfd3b7-0e4e-4c7f-bd98-9e778dd19ff3', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'verify', email: registerData.email, code: userCode })
-      });
-      
-      const verifyResult = await verifyResponse.json();
-      
-      if (!verifyResult.success) {
-        alert(verifyResult.error || 'Неверный код подтверждения');
-        return;
-      }
-      
-      const newCustomer: Customer = { ...registerData };
-      const updatedCustomers = [...customers, newCustomer];
-      setCustomers(updatedCustomers);
-      localStorage.setItem('customers', JSON.stringify(updatedCustomers));
-      setCurrentCustomer(newCustomer);
-      sessionStorage.setItem('currentCustomer', JSON.stringify(newCustomer));
+      setCurrentCustomer(user);
       setIsAuthOpen(false);
       setShowCustomerAccount(true);
-      sessionStorage.setItem('showCustomerAccount', 'true');
-      setRegisterData({ email: '', password: '', name: '' });
+      setRegisterData({ email: '', password: '', name: '', phone: '' });
       setIsRegisterMode(false);
-      addNotification('Email подтверждён! Регистрация успешна!', 'success');
+      
+      addNotification('Регистрация успешна!', 'success');
     } catch (error) {
       console.error('Ошибка регистрации:', error);
-      alert('Ошибка при регистрации. Попробуйте позже.');
+      addNotification('Ошибка при регистрации. Попробуйте позже.', 'warning');
     }
   };
 

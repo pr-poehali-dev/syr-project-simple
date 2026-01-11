@@ -1,12 +1,18 @@
 import json
 import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from auth import handle_auth
 
-PRODUCTS_FILE = '/tmp/products.json'
+def get_db_connection():
+    """Получить соединение с БД"""
+    return psycopg2.connect(os.environ['DATABASE_URL'])
 
 def handler(event: dict, context) -> dict:
-    """Управление товарами магазина"""
+    """Управление товарами магазина и аутентификация"""
     
     method = event.get('httpMethod', 'GET')
+    path = event.get('path', '')
     
     if method == 'OPTIONS':
         return {
@@ -14,113 +20,141 @@ def handler(event: dict, context) -> dict:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Authorization',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
             'isBase64Encoded': False
         }
     
-    if method == 'GET':
-        if os.path.exists(PRODUCTS_FILE):
-            with open(PRODUCTS_FILE, 'r', encoding='utf-8') as f:
-                products = json.load(f)
-        else:
-            products = []
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        if 'auth' in path or 'login' in path or 'register' in path or 'verify' in path:
+            return handle_auth(event, conn, cur)
+        
+        if method == 'GET':
+            cur.execute("SELECT * FROM products ORDER BY id DESC")
+            products = cur.fetchall()
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps([dict(p) for p in products], default=str),
+                'isBase64Encoded': False
+            }
+        
+        if method == 'POST':
+            body = json.loads(event.get('body', '{}'))
+            
+            cur.execute(
+                """
+                INSERT INTO products (name, description, price, weight, category_id, image_url, in_stock, variants)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING *
+                """,
+                (
+                    body.get('name'),
+                    body.get('description'),
+                    body.get('price'),
+                    body.get('weight'),
+                    body.get('category_id'),
+                    body.get('image'),
+                    body.get('inStock', True),
+                    json.dumps(body.get('variants', []))
+                )
+            )
+            new_product = cur.fetchone()
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps(dict(new_product), default=str),
+                'isBase64Encoded': False
+            }
+        
+        if method == 'PUT':
+            body = json.loads(event.get('body', '{}'))
+            product_id = body.get('id')
+            
+            cur.execute(
+                """
+                UPDATE products 
+                SET name = %s, description = %s, price = %s, weight = %s, 
+                    category_id = %s, image_url = %s, in_stock = %s, variants = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                RETURNING *
+                """,
+                (
+                    body.get('name'),
+                    body.get('description'),
+                    body.get('price'),
+                    body.get('weight'),
+                    body.get('category_id'),
+                    body.get('image'),
+                    body.get('inStock', True),
+                    json.dumps(body.get('variants', [])),
+                    product_id
+                )
+            )
+            updated_product = cur.fetchone()
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps(dict(updated_product) if updated_product else {'success': True}, default=str),
+                'isBase64Encoded': False
+            }
+        
+        if method == 'DELETE':
+            query_params = event.get('queryStringParameters', {}) or {}
+            product_id = int(query_params.get('id', 0))
+            
+            cur.execute("UPDATE products SET in_stock = FALSE WHERE id = %s", (product_id,))
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({'success': True}),
+                'isBase64Encoded': False
+            }
         
         return {
-            'statusCode': 200,
+            'statusCode': 405,
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'body': json.dumps(products),
+            'body': json.dumps({'error': 'Method not allowed'}),
             'isBase64Encoded': False
         }
-    
-    if method == 'POST':
-        body = json.loads(event.get('body', '{}'))
         
-        if os.path.exists(PRODUCTS_FILE):
-            with open(PRODUCTS_FILE, 'r', encoding='utf-8') as f:
-                products = json.load(f)
-        else:
-            products = []
-        
-        max_id = max([p.get('id', 0) for p in products], default=0)
-        new_product = body
-        new_product['id'] = max_id + 1
-        products.append(new_product)
-        
-        with open(PRODUCTS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(products, f, ensure_ascii=False, indent=2)
-        
+    except Exception as e:
         return {
-            'statusCode': 200,
+            'statusCode': 500,
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'body': json.dumps(new_product),
+            'body': json.dumps({'error': str(e)}),
             'isBase64Encoded': False
         }
-    
-    if method == 'PUT':
-        body = json.loads(event.get('body', '{}'))
-        product_id = body.get('id')
-        
-        if os.path.exists(PRODUCTS_FILE):
-            with open(PRODUCTS_FILE, 'r', encoding='utf-8') as f:
-                products = json.load(f)
-        else:
-            products = []
-        
-        products = [body if p['id'] == product_id else p for p in products]
-        
-        with open(PRODUCTS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(products, f, ensure_ascii=False, indent=2)
-        
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({'success': True}),
-            'isBase64Encoded': False
-        }
-    
-    if method == 'DELETE':
-        query_params = event.get('queryStringParameters', {}) or {}
-        product_id = int(query_params.get('id', 0))
-        
-        if os.path.exists(PRODUCTS_FILE):
-            with open(PRODUCTS_FILE, 'r', encoding='utf-8') as f:
-                products = json.load(f)
-        else:
-            products = []
-        
-        products = [p for p in products if p['id'] != product_id]
-        
-        with open(PRODUCTS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(products, f, ensure_ascii=False, indent=2)
-        
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({'success': True}),
-            'isBase64Encoded': False
-        }
-    
-    return {
-        'statusCode': 405,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        'body': json.dumps({'error': 'Method not allowed'}),
-        'isBase64Encoded': False
-    }
+    finally:
+        cur.close()
+        conn.close()
