@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
+import { useToast } from '@/hooks/use-toast';
 
 type Order = {
   id: number;
@@ -25,8 +29,33 @@ type CustomerAccountProps = {
   onBackToShop: () => void;
 };
 
+const AUTH_API = 'https://functions.poehali.dev/e8fbfc39-3ec6-4e53-b8c1-ba6b9c81e100';
+
 export default function CustomerAccount({ customerEmail, orders, onLogout, onBackToShop }: CustomerAccountProps) {
   const [localOrders, setLocalOrders] = useState(orders);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: ''
+  });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const user = localStorage.getItem('currentUser');
+    if (user) {
+      const parsed = JSON.parse(user);
+      setCurrentUser(parsed);
+      setEditForm({
+        name: parsed.full_name || '',
+        email: parsed.email || '',
+        phone: parsed.phone || '',
+        password: ''
+      });
+    }
+  }, []);
 
   useEffect(() => {
     const savedOrders = localStorage.getItem('orders');
@@ -90,10 +119,33 @@ export default function CustomerAccount({ customerEmail, orders, onLogout, onBac
       <main className="container mx-auto px-4 py-8">
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="font-heading">Информация о профиле</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="font-heading">Информация о профиле</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => setIsEditProfileOpen(true)}>
+                <Icon name="Edit" size={16} className="mr-2" />
+                Редактировать
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Email: <span className="text-foreground font-medium">{customerEmail}</span></p>
+          <CardContent className="space-y-2">
+            {currentUser && (
+              <>
+                <div>
+                  <span className="text-muted-foreground">ФИО: </span>
+                  <span className="text-foreground font-medium">{currentUser.full_name}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Email: </span>
+                  <span className="text-foreground font-medium">{currentUser.email}</span>
+                </div>
+                {currentUser.phone && (
+                  <div>
+                    <span className="text-muted-foreground">Телефон: </span>
+                    <span className="text-foreground font-medium">{currentUser.phone}</span>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -159,6 +211,110 @@ export default function CustomerAccount({ customerEmail, orders, onLogout, onBac
           </div>
         )}
       </main>
+
+      <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Редактирование профиля</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="profile-name">ФИО</Label>
+              <Input
+                id="profile-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                placeholder="Иванов Иван Иванович"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="profile-email">Email</Label>
+              <Input
+                id="profile-email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                placeholder="example@mail.ru"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="profile-phone">Номер телефона</Label>
+              <Input
+                id="profile-phone"
+                type="tel"
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                placeholder="+7 999 123-45-67"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="profile-password">Новый пароль (оставьте пустым, если не нужно менять)</Label>
+              <Input
+                id="profile-password"
+                type="password"
+                value={editForm.password}
+                onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                placeholder="Введите новый пароль"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditProfileOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={async () => {
+              try {
+                const token = localStorage.getItem('authToken');
+                const updateData: any = {
+                  name: editForm.name,
+                  email: editForm.email,
+                  phone: editForm.phone
+                };
+                
+                if (editForm.password) {
+                  updateData.password = editForm.password;
+                }
+                
+                const response = await fetch(`${AUTH_API}/profile`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify(updateData)
+                });
+                
+                if (response.ok) {
+                  const data = await response.json();
+                  localStorage.setItem('currentUser', JSON.stringify(data.user));
+                  setCurrentUser(data.user);
+                  toast({
+                    title: 'Успешно',
+                    description: 'Профиль обновлён'
+                  });
+                  setIsEditProfileOpen(false);
+                } else {
+                  const error = await response.json();
+                  toast({
+                    title: 'Ошибка',
+                    description: error.error || 'Не удалось обновить профиль',
+                    variant: 'destructive'
+                  });
+                }
+              } catch (error) {
+                console.error('Ошибка обновления профиля:', error);
+                toast({
+                  title: 'Ошибка',
+                  description: 'Ошибка подключения к серверу',
+                  variant: 'destructive'
+                });
+              }
+            }}>
+              Сохранить изменения
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

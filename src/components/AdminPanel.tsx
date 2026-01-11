@@ -8,6 +8,7 @@ import DomainSetup from './DomainSetup';
 import AdminProductsTab from './admin/AdminProductsTab';
 import AdminOrdersTab from './admin/AdminOrdersTab';
 import AdminSummaryTab from './admin/AdminSummaryTab';
+import AdminCustomersTab from './admin/AdminCustomersTab';
 import AdminDialogs from './admin/AdminDialogs';
 
 type Order = {
@@ -117,9 +118,10 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-4xl">
+          <TabsList className="grid w-full grid-cols-6 max-w-5xl">
             <TabsTrigger value="products">Товары</TabsTrigger>
             <TabsTrigger value="orders">Заказы</TabsTrigger>
+            <TabsTrigger value="customers">Клиенты</TabsTrigger>
             <TabsTrigger value="summary">Сводка</TabsTrigger>
             <TabsTrigger value="settings">Настройки</TabsTrigger>
             <TabsTrigger value="domain">Домен</TabsTrigger>
@@ -140,6 +142,10 @@ export default function AdminPanel({ products, orders, onProductAdd, onProductUp
               onOrderUpdate={onOrderUpdate}
               onOrderDelete={onOrderDelete}
             />
+          </TabsContent>
+
+          <TabsContent value="customers">
+            <AdminCustomersTab />
           </TabsContent>
 
           <TabsContent value="summary">
